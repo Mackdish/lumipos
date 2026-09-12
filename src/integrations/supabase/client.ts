@@ -26,9 +26,11 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 }
 
 function createSupabaseClient() {
-  const supabaseUrl = import.meta.env['VITE_SUPABASE_URL'] || process.env['SUPABASE_URL'];
+  const serverEnv = typeof process !== 'undefined' ? process.env : undefined;
+  const supabaseUrl = import.meta.env['VITE_SUPABASE_URL'] || serverEnv?.['SUPABASE_URL'];
   const supabasePublishableKey =
-    import.meta.env['VITE_SUPABASE_PUBLISHABLE_KEY'] || process.env['SUPABASE_PUBLISHABLE_KEY'];
+    import.meta.env['VITE_SUPABASE_PUBLISHABLE_KEY'] ||
+    serverEnv?.['SUPABASE_PUBLISHABLE_KEY'];
 
   if (!supabaseUrl || !supabasePublishableKey) {
     const missing = [

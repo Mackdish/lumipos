@@ -14,7 +14,7 @@ const nav = [
 export default function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { user, loading, displayName } = useAuth();
+  const { user, loading, displayName, isManager } = useAuth();
 
   useEffect(() => {
     if (!loading && !user) router.navigate({ to: "/auth" });

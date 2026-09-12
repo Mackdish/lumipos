@@ -101,43 +101,58 @@ function OrdersPage() {
           </div>
         </div>
 
-        <section className="mt-6 rounded-2xl border border-border bg-card">
-          {isLoading ? (
-            <p className="p-5 text-sm text-muted-foreground">Loading orders...</p>
-          ) : visible.length === 0 ? (
-            <p className="p-5 text-sm text-muted-foreground">No orders match this view.</p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {visible.map((order) => (
-                <li key={order.id}>
-                  <Link
-                    to="/orders/$id"
-                    params={{ id: order.id }}
-                    className="flex flex-wrap items-center justify-between gap-3 p-5 hover:bg-muted"
-                  >
-                    <div>
-                      <p className="font-bold">
-                        {orderCode(order)} · {order.customer}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {order.employee_name} · {formatTime(order.created_at)} ·{" "}
-                        {order.payment_method}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold">{formatMoney(Number(order.total))}</p>
-                      <p className="text-xs font-bold text-muted-foreground">
-                        {order.payment_status} ·{" "}
-                        {KITCHEN_LABELS[order.kitchen_status as KitchenStatus] ??
-                          order.kitchen_status}
-                      </p>
-                    </div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+        {isLoading ? (
+          <p className="mt-6 rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground">
+            Loading orders...
+          </p>
+        ) : groups.length === 0 ? (
+          <p className="mt-6 rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground">
+            No orders match this view.
+          </p>
+        ) : (
+          <div className="mt-6 space-y-5">
+            {groups.map(([table, tableOrders]) => (
+              <section key={table} className="rounded-2xl border border-border bg-card">
+                <h2 className="flex items-center justify-between border-b border-border p-4 text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                  <span>{table}</span>
+                  <span>
+                    {tableOrders.length} order{tableOrders.length === 1 ? "" : "s"} ·{" "}
+                    {formatMoney(tableOrders.reduce((sum, o) => sum + Number(o.total), 0))}
+                  </span>
+                </h2>
+                <ul className="divide-y divide-border">
+                  {tableOrders.map((order) => (
+                    <li key={order.id}>
+                      <Link
+                        to="/orders/$id"
+                        params={{ id: order.id }}
+                        className="flex flex-wrap items-center justify-between gap-3 p-5 hover:bg-muted"
+                      >
+                        <div>
+                          <p className="font-bold">
+                            {orderCode(order)} · {order.customer}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {order.employee_name} · {formatTime(order.created_at)} ·{" "}
+                            {order.payment_method}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold">{formatMoney(Number(order.total))}</p>
+                          <p className="text-xs font-bold text-muted-foreground">
+                            {order.payment_status} ·{" "}
+                            {KITCHEN_LABELS[order.kitchen_status as KitchenStatus] ??
+                              order.kitchen_status}
+                          </p>
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))}
+          </div>
+        )}
       </main>
     </AppShell>
   );

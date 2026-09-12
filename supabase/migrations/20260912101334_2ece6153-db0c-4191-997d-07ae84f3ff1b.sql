@@ -1,0 +1,17 @@
+INSERT INTO public.menu_items (name, category, price, is_available) VALUES
+('Tea with milk', 'Breakfast', 50, true),
+('Coffee', 'Breakfast', 80, true),
+('Mandazi (2 pcs)', 'Breakfast', 40, true),
+('Chapati & beans', 'Breakfast', 150, true),
+('Nyama choma (quarter kg)', 'Main meals', 450, true),
+('Beef stew with ugali', 'Main meals', 350, true),
+('Chicken stew with rice', 'Main meals', 400, true),
+('Fish fry with ugali', 'Main meals', 500, true),
+('Pilau with kachumbari', 'Main meals', 380, true),
+('Vegetable curry with rice', 'Main meals', 300, true),
+('Chips', 'Sides', 150, true),
+('Kachumbari', 'Sides', 80, true),
+('Sukuma wiki', 'Sides', 70, true),
+('Soda 500ml', 'Drinks', 100, true),
+('Bottled water', 'Drinks', 60, true),
+('Fresh juice', 'Drinks', 180, true);

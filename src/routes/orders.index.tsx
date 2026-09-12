@@ -63,6 +63,14 @@ function OrdersPage() {
     return matchesFilter && matchesSearch;
   });
 
+  const groups = Array.from(
+    visible.reduce((map, order) => {
+      const key = tableLabel(order);
+      map.set(key, [...(map.get(key) ?? []), order]);
+      return map;
+    }, new Map<string, Order[]>()),
+  );
+
   return (
     <AppShell>
       <main className="mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-10">

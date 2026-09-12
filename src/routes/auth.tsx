@@ -1,7 +1,6 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/auth")({
@@ -54,7 +53,7 @@ function AuthPage() {
       setMessage(
         error
           ? error.message
-          : "Account created. Check your email for the confirmation link, then sign in.",
+          : "Account created. You can sign in now.",
       );
       if (!error) setMode("signin");
       return;
@@ -63,14 +62,6 @@ function AuthPage() {
     setBusy(false);
     if (error) setMessage(error.message);
     else router.navigate({ to: "/" });
-  }
-
-  async function google() {
-    setMessage("");
-    const { error } = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (error) setMessage(error.message);
   }
 
   return (
@@ -153,13 +144,6 @@ function AuthPage() {
             <span aria-hidden="true">→</span>
           </button>
         </form>
-
-        <button
-          onClick={google}
-          className="mt-3 w-full rounded-xl border border-input bg-background px-5 py-3.5 font-bold transition hover:bg-muted"
-        >
-          Continue with Google
-        </button>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
           {mode === "signin" ? "New staff member?" : "Already have an account?"}{" "}

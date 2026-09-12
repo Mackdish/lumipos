@@ -69,7 +69,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
           </span>
         </Link>
         <nav aria-label="Main navigation" className="space-y-1">
-          {nav.map((item) => (
+          {links.map((item) => (
             <Link
               key={item.to}
               to={item.to}

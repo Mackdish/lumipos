@@ -33,6 +33,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
     );
   }
 
+  const links = isManager ? [...nav, { to: "/menu", label: "Menu", icon: "☰" }] : nav;
+
   const isActive = (to: string) =>
     to === "/" ? pathname === "/" : pathname === to || pathname.startsWith(`${to}/`);
 

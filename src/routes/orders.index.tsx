@@ -3,7 +3,16 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import AppShell from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
-import { formatMoney, formatTime, orderCode, type Order } from "@/lib/pos";
+import {
+  KITCHEN_LABELS,
+  KITCHEN_STATUSES,
+  formatMoney,
+  formatTime,
+  orderCode,
+  tableLabel,
+  type KitchenStatus,
+  type Order,
+} from "@/lib/pos";
 
 export const Route = createFileRoute("/orders/")({
   head: () => ({
@@ -23,7 +32,7 @@ export const Route = createFileRoute("/orders/")({
   component: OrdersPage,
 });
 
-const filters = ["All", "PAID", "PENDING"] as const;
+const filters = ["All", "PAID", "PENDING", ...KITCHEN_STATUSES] as const;
 
 function OrdersPage() {
   const [filter, setFilter] = useState<(typeof filters)[number]>("All");
@@ -42,11 +51,13 @@ function OrdersPage() {
   });
 
   const visible = orders.filter((o) => {
-    const matchesFilter = filter === "All" || o.payment_status === filter;
+    const matchesFilter =
+      filter === "All" || o.payment_status === filter || o.kitchen_status === filter;
     const q = search.trim().toLowerCase();
     const matchesSearch =
       !q ||
       o.customer.toLowerCase().includes(q) ||
+      (o.table_number ?? "").toLowerCase().includes(q) ||
       o.employee_name.toLowerCase().includes(q) ||
       orderCode(o).toLowerCase().includes(q);
     return matchesFilter && matchesSearch;
@@ -76,7 +87,7 @@ function OrdersPage() {
                     : "border border-border text-muted-foreground"
                 }`}
               >
-                {f}
+                {(KITCHEN_LABELS as Record<string, string>)[f] ?? f}
               </button>
             ))}
           </div>
@@ -108,7 +119,9 @@ function OrdersPage() {
                     <div className="text-right">
                       <p className="font-bold">{formatMoney(Number(order.total))}</p>
                       <p className="text-xs font-bold text-muted-foreground">
-                        {order.payment_status}
+                        {order.payment_status} ·{" "}
+                        {KITCHEN_LABELS[order.kitchen_status as KitchenStatus] ??
+                          order.kitchen_status}
                       </p>
                     </div>
                   </Link>

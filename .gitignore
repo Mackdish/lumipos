@@ -5,8 +5,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-lerna-debug.log*
+bun-debug.log*
 
+# Dependencies and build output
 node_modules
 dist
 dist-ssr
@@ -14,6 +15,11 @@ dist-ssr
 .vinxi
 .tanstack/**
 .nitro
+
+# Environment files
+.env
+.env.*
+!.env.example
 *.local
 
 # Wrangler / Cloudflare

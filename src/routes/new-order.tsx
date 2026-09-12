@@ -69,8 +69,14 @@ function NewOrder() {
   }
 
   async function submit() {
-    if (!customer.trim()) return toast.error("Add a customer or table name");
-    if (items.length === 0) return toast.error("Add at least one menu item");
+    if (!customer.trim()) {
+      toast.error("Add a customer or table name");
+      return;
+    }
+    if (items.length === 0) {
+      toast.error("Add at least one menu item");
+      return;
+    }
     setSaving(true);
     const { data, error } = await supabase
       .from("orders")
@@ -89,7 +95,8 @@ function NewOrder() {
 
     if (error || !data) {
       setSaving(false);
-      return toast.error(error?.message ?? "Could not save the order");
+      toast.error(error?.message ?? "Could not save the order");
+      return;
     }
 
     const { error: itemsError } = await supabase.from("order_items").insert(
@@ -101,7 +108,10 @@ function NewOrder() {
       })),
     );
     setSaving(false);
-    if (itemsError) return toast.error(itemsError.message);
+    if (itemsError) {
+      toast.error(itemsError.message);
+      return;
+    }
     toast.success("Order saved");
     router.navigate({ to: "/orders/$id", params: { id: data.id } });
   }

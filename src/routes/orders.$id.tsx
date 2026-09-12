@@ -42,9 +42,17 @@ function OrderDetail() {
     },
   });
 
-  async function update(patch: Record<string, unknown>) {
+  async function update(patch: {
+    payment_status?: string;
+    order_status?: string;
+    approved_by?: string | null;
+    approved_at?: string | null;
+  }) {
     const { error } = await supabase.from("orders").update(patch).eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     await queryClient.invalidateQueries({ queryKey: ["order", id] });
     await queryClient.invalidateQueries({ queryKey: ["orders"] });
     toast.success("Order updated");

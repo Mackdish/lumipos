@@ -14,7 +14,7 @@ const nav = [
 export default function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { user, loading, displayName } = useAuth();
+  const { user, loading, displayName, isManager } = useAuth();
 
   useEffect(() => {
     if (!loading && !user) router.navigate({ to: "/auth" });
@@ -32,6 +32,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
       </div>
     );
   }
+
+  const links = isManager ? [...nav, { to: "/menu", label: "Menu", icon: "☰" }] : nav;
 
   const isActive = (to: string) =>
     to === "/" ? pathname === "/" : pathname === to || pathname.startsWith(`${to}/`);
@@ -67,7 +69,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
           </span>
         </Link>
         <nav aria-label="Main navigation" className="space-y-1">
-          {nav.map((item) => (
+          {links.map((item) => (
             <Link
               key={item.to}
               to={item.to}

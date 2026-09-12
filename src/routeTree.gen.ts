@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DailySummaryRouteImport } from './routes/daily-summary'
+import { Route as MenuRouteImport } from './routes/menu'
 import { Route as NewOrderRouteImport } from './routes/new-order'
 import { Route as OrdersIndexRouteImport } from './routes/orders.index'
 import { Route as OrdersIdRouteImport } from './routes/orders.$id'
@@ -29,6 +30,11 @@ const AuthRoute = AuthRouteImport.update({
 const DailySummaryRoute = DailySummaryRouteImport.update({
   id: '/daily-summary',
   path: '/daily-summary',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MenuRoute = MenuRouteImport.update({
+  id: '/menu',
+  path: '/menu',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NewOrderRoute = NewOrderRouteImport.update({
@@ -51,6 +57,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/daily-summary': typeof DailySummaryRoute
+  '/menu': typeof MenuRoute
   '/new-order': typeof NewOrderRoute
   '/orders/$id': typeof OrdersIdRoute
   '/orders/': typeof OrdersIndexRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/daily-summary': typeof DailySummaryRoute
+  '/menu': typeof MenuRoute
   '/new-order': typeof NewOrderRoute
   '/orders/$id': typeof OrdersIdRoute
   '/orders': typeof OrdersIndexRoute
@@ -68,6 +76,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/daily-summary': typeof DailySummaryRoute
+  '/menu': typeof MenuRoute
   '/new-order': typeof NewOrderRoute
   '/orders/$id': typeof OrdersIdRoute
   '/orders/': typeof OrdersIndexRoute
@@ -75,15 +84,28 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/auth' | '/daily-summary' | '/new-order' | '/orders/$id' | '/orders/'
+    | '/'
+    | '/auth'
+    | '/daily-summary'
+    | '/menu'
+    | '/new-order'
+    | '/orders/$id'
+    | '/orders/'
   fileRoutesByTo: FileRoutesByTo
   to:
-    '/' | '/auth' | '/daily-summary' | '/new-order' | '/orders/$id' | '/orders'
+    | '/'
+    | '/auth'
+    | '/daily-summary'
+    | '/menu'
+    | '/new-order'
+    | '/orders/$id'
+    | '/orders'
   id:
     | '__root__'
     | '/'
     | '/auth'
     | '/daily-summary'
+    | '/menu'
     | '/new-order'
     | '/orders/$id'
     | '/orders/'
@@ -93,6 +115,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
   DailySummaryRoute: typeof DailySummaryRoute
+  MenuRoute: typeof MenuRoute
   NewOrderRoute: typeof NewOrderRoute
   OrdersIdRoute: typeof OrdersIdRoute
   OrdersIndexRoute: typeof OrdersIndexRoute
@@ -119,6 +142,13 @@ declare module '@tanstack/react-router' {
       path: '/daily-summary'
       fullPath: '/daily-summary'
       preLoaderRoute: typeof DailySummaryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/menu': {
+      id: '/menu'
+      path: '/menu'
+      fullPath: '/menu'
+      preLoaderRoute: typeof MenuRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/new-order': {
@@ -149,6 +179,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
   DailySummaryRoute: DailySummaryRoute,
+  MenuRoute: MenuRoute,
   NewOrderRoute: NewOrderRoute,
   OrdersIdRoute: OrdersIdRoute,
   OrdersIndexRoute: OrdersIndexRoute,

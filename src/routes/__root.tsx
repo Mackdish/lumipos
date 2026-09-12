@@ -79,21 +79,22 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Bingo Hotel Order Book" },
-      { name: "description", content: "Record hotel food orders, payments and daily takings." },
-      { name: "author", content: "Bingo Hotel" },
-      { property: "og:title", content: "Bingo Hotel Order Book" },
-      { property: "og:description", content: "Record hotel food orders, payments and daily takings." },
+      { title: "LumiPOS" },
+      { name: "description", content: "Hotel and restaurant food ordering POS." },
+      { name: "author", content: "LumiPOS" },
+      { property: "og:title", content: "LumiPOS" },
+      { property: "og:description", content: "Hotel and restaurant food ordering POS." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "icon", href: "/icon.svg", type: "image/svg+xml" },
+      { rel: "apple-touch-icon", href: "/icon.svg" },
     ],
   }),
   shellComponent: RootShell,
@@ -118,6 +119,16 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/sw.js").catch((error) => {
+          console.error("LumiPOS service worker registration failed:", error);
+        });
+      });
+    }
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

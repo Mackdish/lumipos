@@ -82,11 +82,13 @@ export type Database = {
           employee_id: string | null
           employee_name: string
           id: string
+          kitchen_status: string
           notes: string | null
           order_number: number
           order_status: string
           payment_method: string
           payment_status: string
+          table_number: string | null
           total: number
         }
         Insert: {
@@ -97,11 +99,13 @@ export type Database = {
           employee_id?: string | null
           employee_name?: string
           id?: string
+          kitchen_status?: string
           notes?: string | null
           order_number?: number
           order_status?: string
           payment_method?: string
           payment_status?: string
+          table_number?: string | null
           total?: number
         }
         Update: {
@@ -112,11 +116,13 @@ export type Database = {
           employee_id?: string | null
           employee_name?: string
           id?: string
+          kitchen_status?: string
           notes?: string | null
           order_number?: number
           order_status?: string
           payment_method?: string
           payment_status?: string
+          table_number?: string | null
           total?: number
         }
         Relationships: []

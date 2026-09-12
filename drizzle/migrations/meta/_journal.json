@@ -8,6 +8,13 @@
       "when": 1789209301847,
       "tag": "0000_manager_on_signup_for_owner",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789209535308,
+      "tag": "0001_fix_signup_trigger_grants",
+      "breakpoints": true
     }
   ]
 }

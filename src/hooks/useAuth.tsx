@@ -12,6 +12,7 @@ export function useAuth() {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -33,6 +34,7 @@ export function useAuth() {
   useEffect(() => {
     if (!user) {
       setProfile(null);
+      setRole(null);
       return;
     }
     let active = true;
@@ -43,6 +45,14 @@ export function useAuth() {
       .maybeSingle()
       .then(({ data }) => {
         if (active) setProfile((data as Profile) ?? null);
+      });
+    supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (active) setRole((data?.role as string) ?? null);
       });
     return () => {
       active = false;
@@ -55,5 +65,5 @@ export function useAuth() {
     user?.email?.split("@")[0] ||
     "Staff member";
 
-  return { session, user, profile, displayName, loading };
+  return { session, user, profile, role, isManager: role === "manager", displayName, loading };
 }

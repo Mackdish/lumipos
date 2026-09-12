@@ -3,7 +3,16 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import AppShell from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
-import { formatMoney, formatTime, orderCode, type Order } from "@/lib/pos";
+import {
+  KITCHEN_LABELS,
+  KITCHEN_STATUSES,
+  formatMoney,
+  formatTime,
+  orderCode,
+  tableLabel,
+  type KitchenStatus,
+  type Order,
+} from "@/lib/pos";
 
 export const Route = createFileRoute("/orders/")({
   head: () => ({
@@ -23,7 +32,7 @@ export const Route = createFileRoute("/orders/")({
   component: OrdersPage,
 });
 
-const filters = ["All", "PAID", "PENDING"] as const;
+const filters = ["All", "PAID", "PENDING", ...KITCHEN_STATUSES] as const;
 
 function OrdersPage() {
   const [filter, setFilter] = useState<(typeof filters)[number]>("All");
@@ -42,15 +51,25 @@ function OrdersPage() {
   });
 
   const visible = orders.filter((o) => {
-    const matchesFilter = filter === "All" || o.payment_status === filter;
+    const matchesFilter =
+      filter === "All" || o.payment_status === filter || o.kitchen_status === filter;
     const q = search.trim().toLowerCase();
     const matchesSearch =
       !q ||
       o.customer.toLowerCase().includes(q) ||
+      (o.table_number ?? "").toLowerCase().includes(q) ||
       o.employee_name.toLowerCase().includes(q) ||
       orderCode(o).toLowerCase().includes(q);
     return matchesFilter && matchesSearch;
   });
+
+  const groups = Array.from(
+    visible.reduce((map, order) => {
+      const key = tableLabel(order);
+      map.set(key, [...(map.get(key) ?? []), order]);
+      return map;
+    }, new Map<string, Order[]>()),
+  );
 
   return (
     <AppShell>
@@ -76,47 +95,64 @@ function OrdersPage() {
                     : "border border-border text-muted-foreground"
                 }`}
               >
-                {f}
+                {(KITCHEN_LABELS as Record<string, string>)[f] ?? f}
               </button>
             ))}
           </div>
         </div>
 
-        <section className="mt-6 rounded-2xl border border-border bg-card">
-          {isLoading ? (
-            <p className="p-5 text-sm text-muted-foreground">Loading orders...</p>
-          ) : visible.length === 0 ? (
-            <p className="p-5 text-sm text-muted-foreground">No orders match this view.</p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {visible.map((order) => (
-                <li key={order.id}>
-                  <Link
-                    to="/orders/$id"
-                    params={{ id: order.id }}
-                    className="flex flex-wrap items-center justify-between gap-3 p-5 hover:bg-muted"
-                  >
-                    <div>
-                      <p className="font-bold">
-                        {orderCode(order)} · {order.customer}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {order.employee_name} · {formatTime(order.created_at)} ·{" "}
-                        {order.payment_method}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold">{formatMoney(Number(order.total))}</p>
-                      <p className="text-xs font-bold text-muted-foreground">
-                        {order.payment_status}
-                      </p>
-                    </div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+        {isLoading ? (
+          <p className="mt-6 rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground">
+            Loading orders...
+          </p>
+        ) : groups.length === 0 ? (
+          <p className="mt-6 rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground">
+            No orders match this view.
+          </p>
+        ) : (
+          <div className="mt-6 space-y-5">
+            {groups.map(([table, tableOrders]) => (
+              <section key={table} className="rounded-2xl border border-border bg-card">
+                <h2 className="flex items-center justify-between border-b border-border p-4 text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                  <span>{table}</span>
+                  <span>
+                    {tableOrders.length} order{tableOrders.length === 1 ? "" : "s"} ·{" "}
+                    {formatMoney(tableOrders.reduce((sum, o) => sum + Number(o.total), 0))}
+                  </span>
+                </h2>
+                <ul className="divide-y divide-border">
+                  {tableOrders.map((order) => (
+                    <li key={order.id}>
+                      <Link
+                        to="/orders/$id"
+                        params={{ id: order.id }}
+                        className="flex flex-wrap items-center justify-between gap-3 p-5 hover:bg-muted"
+                      >
+                        <div>
+                          <p className="font-bold">
+                            {orderCode(order)} · {order.customer}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {order.employee_name} · {formatTime(order.created_at)} ·{" "}
+                            {order.payment_method}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold">{formatMoney(Number(order.total))}</p>
+                          <p className="text-xs font-bold text-muted-foreground">
+                            {order.payment_status} ·{" "}
+                            {KITCHEN_LABELS[order.kitchen_status as KitchenStatus] ??
+                              order.kitchen_status}
+                          </p>
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))}
+          </div>
+        )}
       </main>
     </AppShell>
   );

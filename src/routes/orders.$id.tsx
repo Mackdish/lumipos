@@ -3,7 +3,16 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import AppShell from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { formatMoney, formatTime, orderCode, type Order } from "@/lib/pos";
+import {
+  KITCHEN_LABELS,
+  KITCHEN_STATUSES,
+  formatMoney,
+  formatTime,
+  orderCode,
+  tableLabel,
+  type KitchenStatus,
+  type Order,
+} from "@/lib/pos";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/orders/$id")({
@@ -45,6 +54,7 @@ function OrderDetail() {
   async function update(patch: {
     payment_status?: string;
     order_status?: string;
+    kitchen_status?: string;
     approved_by?: string | null;
     approved_at?: string | null;
   }) {
@@ -75,9 +85,39 @@ function OrderDetail() {
               {orderCode(order)} · {order.customer}
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              {order.employee_name} · {formatTime(order.created_at)} · {order.payment_method} ·{" "}
-              {order.payment_status}
+              {tableLabel(order)} · {order.employee_name} · {formatTime(order.created_at)} ·{" "}
+              {order.payment_method} · {order.payment_status}
             </p>
+
+            <section className="mt-6 rounded-2xl border border-border bg-card p-5">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                Kitchen status
+              </h2>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {KITCHEN_STATUSES.map((status: KitchenStatus) => {
+                  const active = order.kitchen_status === status;
+                  return (
+                    <button
+                      key={status}
+                      onClick={() =>
+                        update({
+                          kitchen_status: status,
+                          order_status: status === "SERVED" ? "COMPLETED" : "OPEN",
+                        })
+                      }
+                      aria-pressed={active}
+                      className={`rounded-xl px-4 py-2.5 text-sm font-bold ${
+                        active
+                          ? "bg-primary text-primary-foreground"
+                          : "border border-border text-muted-foreground hover:bg-muted"
+                      }`}
+                    >
+                      {KITCHEN_LABELS[status]}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
 
             <section className="mt-6 rounded-2xl border border-border bg-card">
               <h2 className="border-b border-border p-4 text-sm font-bold uppercase tracking-wider text-muted-foreground">
@@ -123,14 +163,6 @@ function OrderDetail() {
                   className="rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground"
                 >
                   Approve payment
-                </button>
-              )}
-              {order.order_status !== "COMPLETED" && (
-                <button
-                  onClick={() => update({ order_status: "COMPLETED" })}
-                  className="rounded-xl border border-border px-4 py-3 text-sm font-bold"
-                >
-                  Mark completed
                 </button>
               )}
             </div>

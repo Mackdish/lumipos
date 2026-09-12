@@ -29,6 +29,7 @@ function NewOrder() {
   const router = useRouter();
   const { user, displayName } = useAuth();
   const [customer, setCustomer] = useState("");
+  const [tableNumber, setTableNumber] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [notes, setNotes] = useState("");
   const [lines, setLines] = useState<Record<string, number>>({});
@@ -82,11 +83,13 @@ function NewOrder() {
       .from("orders")
       .insert({
         customer: customer.trim(),
+        table_number: tableNumber.trim() || null,
         employee_id: user?.id ?? null,
         employee_name: displayName,
         payment_method: paymentMethod,
         payment_status: paymentMethod === "Cash" ? "PAID" : "PENDING",
         order_status: "OPEN",
+        kitchen_status: "OPEN",
         total,
         notes: notes.trim() || null,
       })
@@ -179,6 +182,15 @@ function NewOrder() {
                 value={customer}
                 onChange={(e) => setCustomer(e.target.value)}
                 placeholder="Table 4"
+                className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="mt-4 block text-sm font-semibold">
+              Table / room number
+              <input
+                value={tableNumber}
+                onChange={(e) => setTableNumber(e.target.value)}
+                placeholder="4"
                 className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm"
               />
             </label>

@@ -121,13 +121,21 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   useEffect(() => {
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/sw.js").catch((error) => {
-          console.error("LumiPOS service worker registration failed:", error);
+    if (!("serviceWorker" in navigator)) return;
+
+    const registerServiceWorker = async () => {
+      try {
+        const registration = await navigator.serviceWorker.register("/sw.js?v=3", {
+          updateViaCache: "none",
         });
-      });
-    }
+        await registration.update();
+      } catch (error) {
+        console.error("LumiPOS service worker registration failed:", error);
+      }
+    };
+
+    window.addEventListener("load", registerServiceWorker);
+    return () => window.removeEventListener("load", registerServiceWorker);
   }, []);
 
   return (

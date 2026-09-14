@@ -8,6 +8,7 @@ const nav = [
   { to: "/", label: "Home", icon: "⌂" },
   { to: "/new-order", label: "New order", icon: "+" },
   { to: "/orders", label: "Orders", icon: "▤" },
+  { to: "/kitchen", label: "Kitchen", icon: "▥" },
   { to: "/daily-summary", label: "Summary", icon: "◔" },
 ];
 

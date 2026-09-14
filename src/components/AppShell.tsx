@@ -10,6 +10,7 @@ const nav = [
   { to: "/orders", label: "Orders", icon: "▤" },
   { to: "/kitchen", label: "Kitchen", icon: "▥" },
   { to: "/inventory", label: "Inventory", icon: "▦" },
+  { to: "/recipes", label: "Recipes", icon: "◈" },
   { to: "/daily-summary", label: "Summary", icon: "◔" },
 ];
 
@@ -36,7 +37,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
     links.find((item) => item.to === "/new-order")!,
     links.find((item) => item.to === "/orders")!,
     links.find((item) => item.to === "/kitchen")!,
-    links.find((item) => item.to === "/inventory")!,
+    ...(isManager ? [links.find((item) => item.to === "/inventory")!] : []),
   ];
   const isActive = (to: string) => to === "/" ? pathname === "/" : pathname === to || pathname.startsWith(`${to}/`);
 

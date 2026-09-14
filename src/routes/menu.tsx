@@ -11,42 +11,41 @@ export const Route = createFileRoute("/menu")({
   head: () => ({
     meta: [
       { title: "Menu management | LumiPOS" },
-      {
-        name: "description",
-        content: "Manage dishes, prices, categories and availability in LumiPOS.",
-      },
+      { name: "description", content: "Manage dishes, prices, images, categories and availability in LumiPOS." },
       { property: "og:title", content: "Menu management | LumiPOS" },
-      {
-        property: "og:description",
-        content: "Manage dishes, prices, categories and availability in LumiPOS.",
-      },
+      { property: "og:description", content: "Manage dishes, prices, images, categories and availability in LumiPOS." },
     ],
   }),
   component: MenuManagement,
 });
 
 const CATEGORIES = ["Breakfast", "Main meals", "Sides", "Drinks"];
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 function MenuManagement() {
-  const { isManager, loading } = useAuth();
+  const { isManager, loading, user } = useAuth();
   const queryClient = useQueryClient();
+  const db = supabase as any;
 
   const [name, setName] = useState("");
   const [category, setCategory] = useState(CATEGORIES[0]!);
   const [price, setPrice] = useState("");
+  const [image, setImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState("");
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
 
   const { data: items = [], isLoading, isError, error } = useQuery({
     queryKey: ["menu_items"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("menu_items")
-        .select("id, name, category, price, is_available")
+        .select("id, name, category, price, is_available, image_url")
         .order("category")
         .order("name");
       if (error) throw error;
-      return data as MenuItem[];
+      return (data ?? []) as MenuItem[];
     },
   });
 
@@ -74,19 +73,58 @@ function MenuManagement() {
   const availableCount = items.filter((item) => item.is_available).length;
   const hiddenCount = items.length - availableCount;
 
+  function selectImage(file: File | undefined) {
+    if (!file) return;
+    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+      toast.error("Use a JPG, PNG or WebP image.");
+      return;
+    }
+    if (file.size > MAX_IMAGE_SIZE) {
+      toast.error("Image must be 5 MB or smaller.");
+      return;
+    }
+    setImage(file);
+    setImagePreview(URL.createObjectURL(file));
+  }
+
+  function clearImage() {
+    setImage(null);
+    setImagePreview("");
+  }
+
   const addItem = useMutation({
     mutationFn: async () => {
       const value = Number(price);
       if (!name.trim()) throw new Error("Give the dish a name.");
       if (!Number.isFinite(value) || value <= 0) throw new Error("Enter a price above zero.");
-      const { error } = await supabase
+
+      let imageUrl: string | null = null;
+      let uploadedPath: string | null = null;
+
+      if (image) {
+        const extension = image.name.split(".").pop()?.toLowerCase() || "jpg";
+        const path = `${user!.id}/${crypto.randomUUID()}.${extension}`;
+        const { error: uploadError } = await supabase.storage
+          .from("menu-images")
+          .upload(path, image, { cacheControl: "3600", contentType: image.type, upsert: false });
+        if (uploadError) throw new Error(`Image upload failed: ${uploadError.message}`);
+        uploadedPath = path;
+        imageUrl = supabase.storage.from("menu-images").getPublicUrl(path).data.publicUrl;
+      }
+
+      const { error } = await db
         .from("menu_items")
-        .insert({ name: name.trim(), category, price: value });
-      if (error) throw error;
+        .insert({ name: name.trim(), category, price: value, image_url: imageUrl });
+
+      if (error) {
+        if (uploadedPath) await supabase.storage.from("menu-images").remove([uploadedPath]);
+        throw error;
+      }
     },
     onSuccess: () => {
       setName("");
       setPrice("");
+      clearImage();
       toast.success("Dish added to the menu.");
       refresh();
     },
@@ -95,7 +133,7 @@ function MenuManagement() {
 
   const updateItem = useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: Partial<MenuItem> }) => {
-      const { error } = await supabase.from("menu_items").update(patch).eq("id", id);
+      const { error } = await db.from("menu_items").update(patch).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => refresh(),
@@ -104,8 +142,14 @@ function MenuManagement() {
 
   const removeItem = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("menu_items").delete().eq("id", id);
+      const { data: item } = await db.from("menu_items").select("image_url").eq("id", id).maybeSingle();
+      const { error } = await db.from("menu_items").delete().eq("id", id);
       if (error) throw error;
+      if (item?.image_url) {
+        const marker = "/menu-images/";
+        const index = item.image_url.indexOf(marker);
+        if (index >= 0) await supabase.storage.from("menu-images").remove([item.image_url.slice(index + marker.length)]);
+      }
     },
     onSuccess: () => {
       toast.success("Dish removed.");
@@ -121,9 +165,7 @@ function MenuManagement() {
           <div className="rounded-2xl border border-border bg-card p-6">
             <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Access restricted</p>
             <h1 className="mt-2 text-2xl font-bold">Managers only</h1>
-            <p className="mt-3 text-sm text-muted-foreground">
-              Ask a manager to change dishes, prices or menu availability.
-            </p>
+            <p className="mt-3 text-sm text-muted-foreground">Ask a manager to change dishes, prices or menu availability.</p>
           </div>
         </main>
       </AppShell>
@@ -137,206 +179,80 @@ function MenuManagement() {
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">Menu control</p>
             <h1 className="mt-1 text-3xl font-bold tracking-tight">Menu management</h1>
-            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              Keep the menu accurate for staff by managing dishes, prices and availability.
-            </p>
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">Create visual menu cards so cashiers can identify dishes quickly.</p>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:w-64">
-            <div className="rounded-2xl border border-border bg-card px-4 py-3">
-              <p className="text-xs text-muted-foreground">Available</p>
-              <p className="mt-1 text-xl font-bold">{availableCount}</p>
-            </div>
-            <div className="rounded-2xl border border-border bg-card px-4 py-3">
-              <p className="text-xs text-muted-foreground">Hidden</p>
-              <p className="mt-1 text-xl font-bold">{hiddenCount}</p>
-            </div>
+            <div className="rounded-2xl border border-border bg-card px-4 py-3"><p className="text-xs text-muted-foreground">Available</p><p className="mt-1 text-xl font-bold">{availableCount}</p></div>
+            <div className="rounded-2xl border border-border bg-card px-4 py-3"><p className="text-xs text-muted-foreground">Hidden</p><p className="mt-1 text-xl font-bold">{hiddenCount}</p></div>
           </div>
         </header>
 
         <section className="mt-6 rounded-2xl border border-border bg-card p-4 sm:p-5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="font-bold">Add a dish</h2>
-              <p className="mt-1 text-xs text-muted-foreground">Create a menu item for the POS.</p>
-            </div>
+          <div>
+            <h2 className="font-bold">Add a dish</h2>
+            <p className="mt-1 text-xs text-muted-foreground">Upload a product photo that will appear on the cashier POS card.</p>
           </div>
-          <form
-            className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,1fr)_auto]"
-            onSubmit={(e) => {
-              e.preventDefault();
-              addItem.mutate();
-            }}
-          >
-            <input
-              aria-label="Dish name"
-              placeholder="Dish name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="min-h-11 rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none transition focus:ring-2 focus:ring-primary/30"
-            />
-            <select
-              aria-label="Category"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="min-h-11 rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30"
-            >
-              {CATEGORIES.map((itemCategory) => (
-                <option key={itemCategory} value={itemCategory}>{itemCategory}</option>
-              ))}
+          <form className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,.8fr)_minmax(260px,1.1fr)]" onSubmit={(e) => { e.preventDefault(); addItem.mutate(); }}>
+            <input aria-label="Dish name" placeholder="Dish name" value={name} onChange={(e) => setName(e.target.value)} className="min-h-11 rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
+            <select aria-label="Category" value={category} onChange={(e) => setCategory(e.target.value)} className="min-h-11 rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30">
+              {CATEGORIES.map((itemCategory) => <option key={itemCategory} value={itemCategory}>{itemCategory}</option>)}
             </select>
-            <input
-              aria-label="Price"
-              inputMode="decimal"
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="Price"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              className="min-h-11 rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30"
-            />
-            <button
-              type="submit"
-              disabled={addItem.isPending}
-              className="min-h-11 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {addItem.isPending ? "Adding…" : "Add dish"}
-            </button>
+            <input aria-label="Price" inputMode="decimal" type="number" min="0" step="0.01" placeholder="Price" value={price} onChange={(e) => setPrice(e.target.value)} className="min-h-11 rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
+            <div className="rounded-2xl border border-dashed border-border bg-background/60 p-3">
+              <div className="flex items-center gap-3">
+                {imagePreview ? (
+                  <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl">
+                    <img src={imagePreview} alt="Selected dish preview" className="h-full w-full object-cover" />
+                    <button type="button" onClick={clearImage} aria-label="Remove selected image" className="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-black/70 text-xs font-bold text-white">×</button>
+                  </div>
+                ) : <div className="grid h-20 w-20 shrink-0 place-items-center rounded-xl bg-muted text-2xl">⌁</div>}
+                <div className="min-w-0 flex-1">
+                  <label className="block cursor-pointer rounded-xl border border-border bg-card px-3 py-2 text-center text-sm font-bold hover:bg-muted">
+                    {image ? "Change image" : "Upload product image"}
+                    <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(e) => selectImage(e.target.files?.[0])} />
+                  </label>
+                  <p className="mt-1.5 truncate text-[11px] text-muted-foreground">{image ? image.name : "JPG, PNG or WebP · max 5 MB"}</p>
+                </div>
+              </div>
+            </div>
+            <button type="submit" disabled={addItem.isPending} className="min-h-11 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 lg:col-start-4">{addItem.isPending ? "Uploading…" : "Add dish"}</button>
           </form>
         </section>
 
         <section className="mt-6">
           <div className="flex flex-col gap-3 sm:flex-row">
-            <div className="relative flex-1">
-              <input
-                aria-label="Search menu"
-                placeholder="Search dishes or categories…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="min-h-11 w-full rounded-xl border border-border bg-card px-4 text-sm outline-none focus:ring-2 focus:ring-primary/30"
-              />
-            </div>
+            <input aria-label="Search menu" placeholder="Search dishes or categories…" value={search} onChange={(e) => setSearch(e.target.value)} className="min-h-11 flex-1 rounded-xl border border-border bg-card px-4 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
             <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:max-w-2xl">
-              {categories.map((itemCategory) => (
-                <button
-                  key={itemCategory}
-                  type="button"
-                  onClick={() => setActiveCategory(itemCategory)}
-                  className={`min-h-10 shrink-0 rounded-xl px-4 text-sm font-semibold transition ${
-                    activeCategory === itemCategory
-                      ? "bg-primary text-primary-foreground"
-                      : "border border-border bg-card hover:bg-muted"
-                  }`}
-                >
-                  {itemCategory}
-                </button>
-              ))}
+              {categories.map((itemCategory) => <button key={itemCategory} type="button" onClick={() => setActiveCategory(itemCategory)} className={`min-h-10 shrink-0 rounded-xl px-4 text-sm font-semibold transition ${activeCategory === itemCategory ? "bg-primary text-primary-foreground" : "border border-border bg-card hover:bg-muted"}`}>{itemCategory}</button>)}
             </div>
           </div>
         </section>
 
         {isLoading ? (
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, index) => (
-              <div key={index} className="h-40 animate-pulse rounded-2xl border border-border bg-card" />
-            ))}
-          </div>
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{Array.from({ length: 6 }).map((_, index) => <div key={index} className="h-56 animate-pulse rounded-2xl border border-border bg-card" />)}</div>
         ) : isError ? (
-          <div className="mt-6 rounded-2xl border border-destructive/30 bg-card p-6">
-            <h2 className="font-bold">Could not load the menu</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {error instanceof Error ? error.message : "Please try again."}
-            </p>
-            <button
-              type="button"
-              onClick={() => refresh()}
-              className="mt-4 rounded-xl border border-border px-4 py-2 text-sm font-bold hover:bg-muted"
-            >
-              Try again
-            </button>
-          </div>
+          <div className="mt-6 rounded-2xl border border-destructive/30 bg-card p-6"><h2 className="font-bold">Could not load the menu</h2><p className="mt-2 text-sm text-muted-foreground">{error instanceof Error ? error.message : "Please try again."}</p><button type="button" onClick={() => refresh()} className="mt-4 rounded-xl border border-border px-4 py-2 text-sm font-bold hover:bg-muted">Try again</button></div>
         ) : filteredItems.length === 0 ? (
-          <div className="mt-6 rounded-2xl border border-dashed border-border bg-card p-10 text-center">
-            <h2 className="font-bold">No dishes found</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {items.length === 0 ? "Add your first dish above." : "Try another search or category."}
-            </p>
-          </div>
+          <div className="mt-6 rounded-2xl border border-dashed border-border bg-card p-10 text-center"><h2 className="font-bold">No dishes found</h2><p className="mt-2 text-sm text-muted-foreground">{items.length === 0 ? "Add your first dish above." : "Try another search or category."}</p></div>
         ) : (
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filteredItems.map((item) => (
-              <article
-                key={item.id}
-                className={`rounded-2xl border bg-card p-4 shadow-sm transition ${
-                  item.is_available ? "border-border" : "border-dashed border-muted-foreground/30 opacity-75"
-                }`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <span className="inline-flex rounded-full bg-muted px-2.5 py-1 text-[11px] font-bold text-muted-foreground">
-                      {item.category}
-                    </span>
-                    <h3 className="mt-3 truncate font-bold">{item.name}</h3>
+              <article key={item.id} className={`overflow-hidden rounded-2xl border bg-card shadow-sm transition ${item.is_available ? "border-border" : "border-dashed border-muted-foreground/30 opacity-75"}`}>
+                <div className="relative aspect-[16/10] bg-muted">
+                  {item.image_url ? <img src={item.image_url} alt={item.name} loading="lazy" className="h-full w-full object-cover" /> : <div className="grid h-full place-items-center text-sm font-semibold text-muted-foreground">No image</div>}
+                  <span className="absolute left-3 top-3 rounded-full bg-background/90 px-2.5 py-1 text-[11px] font-bold text-foreground backdrop-blur">{item.category}</span>
+                  <span className={`absolute right-3 top-3 rounded-full px-2.5 py-1 text-[11px] font-bold ${item.is_available ? "bg-emerald-500/90 text-white" : "bg-background/90 text-muted-foreground"}`}>{item.is_available ? "Available" : "Hidden"}</span>
+                </div>
+                <div className="p-4">
+                  <h3 className="truncate font-bold">{item.name}</h3>
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <p className="text-lg font-bold">{formatMoney(Number(item.price))}</p>
+                    <input aria-label={`Price for ${item.name}`} defaultValue={String(Number(item.price))} inputMode="decimal" type="number" min="0" step="0.01" onBlur={(e) => { const value = Number(e.target.value); if (!Number.isFinite(value) || value <= 0) { e.target.value = String(Number(item.price)); return; } if (value !== Number(item.price)) { updateItem.mutate({ id: item.id, patch: { price: value } }); toast.success(`${item.name} price updated.`); } }} className="w-28 rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
                   </div>
-                  <span
-                    className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${
-                      item.is_available ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {item.is_available ? "Available" : "Hidden"}
-                  </span>
-                </div>
-
-                <div className="mt-4 flex items-center justify-between gap-3">
-                  <p className="text-lg font-bold">{formatMoney(Number(item.price))}</p>
-                  <input
-                    aria-label={`Price for ${item.name}`}
-                    defaultValue={String(Number(item.price))}
-                    inputMode="decimal"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    onBlur={(e) => {
-                      const value = Number(e.target.value);
-                      if (!Number.isFinite(value) || value <= 0) {
-                        e.target.value = String(Number(item.price));
-                        return;
-                      }
-                      if (value !== Number(item.price)) {
-                        updateItem.mutate({ id: item.id, patch: { price: value } });
-                        toast.success(`${item.name} price updated.`);
-                      }
-                    }}
-                    className="w-28 rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30"
-                  />
-                </div>
-
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    disabled={updateItem.isPending}
-                    onClick={() =>
-                      updateItem.mutate({
-                        id: item.id,
-                        patch: { is_available: !item.is_available },
-                      })
-                    }
-                    className="min-h-10 rounded-xl border border-border px-3 py-2 text-xs font-bold transition hover:bg-muted disabled:opacity-60"
-                  >
-                    {item.is_available ? "Hide from POS" : "Show on POS"}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={removeItem.isPending}
-                    onClick={() => {
-                      if (window.confirm(`Remove ${item.name} from the menu?`)) {
-                        removeItem.mutate(item.id);
-                      }
-                    }}
-                    className="min-h-10 rounded-xl px-3 py-2 text-xs font-bold text-destructive transition hover:bg-destructive/10 disabled:opacity-60"
-                  >
-                    Remove
-                  </button>
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    <button type="button" disabled={updateItem.isPending} onClick={() => updateItem.mutate({ id: item.id, patch: { is_available: !item.is_available } })} className="min-h-10 rounded-xl border border-border px-3 py-2 text-xs font-bold transition hover:bg-muted disabled:opacity-60">{item.is_available ? "Hide from POS" : "Show on POS"}</button>
+                    <button type="button" disabled={removeItem.isPending} onClick={() => { if (window.confirm(`Remove ${item.name} from the menu?`)) removeItem.mutate(item.id); }} className="min-h-10 rounded-xl px-3 py-2 text-xs font-bold text-destructive transition hover:bg-destructive/10 disabled:opacity-60">Remove</button>
+                  </div>
                 </div>
               </article>
             ))}

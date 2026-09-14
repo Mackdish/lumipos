@@ -8,14 +8,7 @@ import { formatMoney, type MenuItem, type OrderItem } from "@/lib/pos";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/new-order")({
-  head: () => ({
-    meta: [
-      { title: "New order | Bingo Hotel Order Book" },
-      { name: "description", content: "Take a new food order, pick menu items and record cash or M-Pesa payment." },
-      { property: "og:title", content: "New order | Bingo Hotel Order Book" },
-      { property: "og:description", content: "Take a new food order and record cash or M-Pesa payment in seconds." },
-    ],
-  }),
+  head: () => ({ meta: [{ title: "New order | LumiPOS" }, { name: "description", content: "Create a restaurant order and record payment." }] }),
   component: NewOrder,
 });
 
@@ -25,10 +18,12 @@ function NewOrder() {
   const [customer, setCustomer] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [notes, setNotes] = useState("");
+  const [search, setSearch] = useState("");
+  const [activeCategory, setActiveCategory] = useState("All");
   const [lines, setLines] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
 
-  const { data: menu = [], isLoading } = useQuery({
+  const { data: menu = [], isLoading, isError } = useQuery({
     queryKey: ["menu_items"],
     queryFn: async () => {
       const { data, error } = await supabase.from("menu_items").select("*").order("category").order("name");
@@ -37,58 +32,30 @@ function NewOrder() {
     },
   });
 
-  const categories = useMemo(() => Array.from(new Set(menu.map((m) => m.category))), [menu]);
-  const items: OrderItem[] = menu
-    .filter((m) => (lines[m.id] ?? 0) > 0)
-    .map((m) => ({ name: m.name, quantity: lines[m.id]!, price: Number(m.price) }));
+  const categories = useMemo(() => ["All", ...Array.from(new Set(menu.map((m) => m.category)))], [menu]);
+  const visibleMenu = useMemo(() => menu.filter((m) => (activeCategory === "All" || m.category === activeCategory) && m.name.toLowerCase().includes(search.trim().toLowerCase())), [menu, activeCategory, search]);
+  const items: OrderItem[] = menu.filter((m) => (lines[m.id] ?? 0) > 0).map((m) => ({ name: m.name, quantity: lines[m.id]!, price: Number(m.price) }));
   const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
 
   function bump(id: string, delta: number) {
     setLines((prev) => {
       const next = Math.max(0, (prev[id] ?? 0) + delta);
       const copy = { ...prev };
-      if (next === 0) delete copy[id];
-      else copy[id] = next;
+      if (next === 0) delete copy[id]; else copy[id] = next;
       return copy;
     });
   }
 
   async function submit() {
-    if (!customer.trim()) {
-      toast.error("Add a customer name");
-      return;
-    }
-    if (items.length === 0) {
-      toast.error("Add at least one menu item");
-      return;
-    }
+    if (!customer.trim()) return toast.error("Add a customer name");
+    if (items.length === 0) return toast.error("Add at least one menu item");
     setSaving(true);
-    const { data, error } = await supabase.from("orders").insert({
-      customer: customer.trim(),
-      employee_id: user?.id ?? null,
-      employee_name: displayName,
-      payment_method: paymentMethod,
-      payment_status: paymentMethod === "Cash" ? "PAID" : "PENDING",
-      order_status: "OPEN",
-      kitchen_status: "OPEN",
-      total,
-      notes: notes.trim() || null,
-    }).select("id").single();
-
-    if (error || !data) {
-      setSaving(false);
-      toast.error(error?.message ?? "Could not save the order");
-      return;
-    }
-
-    const { error: itemsError } = await supabase.from("order_items").insert(
-      items.map((i) => ({ order_id: data.id, name: i.name, quantity: i.quantity, price: i.price })),
-    );
+    const { data, error } = await supabase.from("orders").insert({ customer: customer.trim(), employee_id: user?.id ?? null, employee_name: displayName, payment_method: paymentMethod, payment_status: paymentMethod === "Cash" ? "PAID" : "PENDING", order_status: "OPEN", kitchen_status: "OPEN", total, notes: notes.trim() || null }).select("id").single();
+    if (error || !data) { setSaving(false); toast.error(error?.message ?? "Could not save the order"); return; }
+    const { error: itemsError } = await supabase.from("order_items").insert(items.map((i) => ({ order_id: data.id, name: i.name, quantity: i.quantity, price: i.price })));
     setSaving(false);
-    if (itemsError) {
-      toast.error(itemsError.message);
-      return;
-    }
+    if (itemsError) { toast.error(itemsError.message); return; }
     toast.success("Order saved");
     router.navigate({ to: "/orders/$id", params: { id: data.id } });
   }
@@ -96,59 +63,26 @@ function NewOrder() {
   return (
     <AppShell>
       <main className="mx-auto max-w-7xl px-4 pb-28 pt-5 sm:px-8 sm:py-8 lg:px-10 lg:pb-10">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">New order</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Choose dishes and record payment.</p>
-          </div>
-          <div className="rounded-xl bg-muted px-3 py-2 text-xs font-bold sm:hidden">{items.length} items</div>
-        </div>
-
-        <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px] lg:mt-8 lg:gap-6">
-          <section className="space-y-4 sm:space-y-6">
-            {isLoading && <p className="text-sm text-muted-foreground">Loading menu...</p>}
-            {categories.map((category) => (
-              <div key={category} className="overflow-hidden rounded-2xl border border-border bg-card">
-                <h2 className="border-b border-border px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground sm:p-4 sm:text-sm">{category}</h2>
-                <ul className="divide-y divide-border">
-                  {menu.filter((m) => m.category === category).map((m) => (
-                    <li key={m.id} className="flex min-h-16 items-center justify-between gap-3 px-3 py-3 sm:p-4">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold sm:text-base">{m.name}</p>
-                        <p className="text-xs text-muted-foreground sm:text-sm">{formatMoney(Number(m.price))}{!m.is_available && " · unavailable"}</p>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-                        <button type="button" aria-label={`Remove one ${m.name}`} onClick={() => bump(m.id, -1)} className="grid h-10 w-10 place-items-center rounded-xl border border-border text-lg font-bold active:scale-95">−</button>
-                        <span className="w-7 text-center text-sm font-bold">{lines[m.id] ?? 0}</span>
-                        <button type="button" aria-label={`Add one ${m.name}`} disabled={!m.is_available} onClick={() => bump(m.id, 1)} className="grid h-10 w-10 place-items-center rounded-xl bg-primary text-lg font-bold text-primary-foreground active:scale-95 disabled:opacity-40">+</button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+        <div className="flex items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.18em] text-primary">Point of sale</p><h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">New order</h1></div><div className="rounded-xl bg-muted px-3 py-2 text-xs font-bold sm:hidden">{itemCount} items</div></div>
+        <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+          <section className="min-w-0">
+            <div className="sticky top-14 z-20 rounded-2xl border border-border bg-background/95 p-2 backdrop-blur lg:static lg:border-0 lg:bg-transparent lg:p-0">
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search menu..." aria-label="Search menu" className="h-11 w-full rounded-xl border border-border bg-card px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
+              <div className="mt-2 flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Menu categories">{categories.map((category) => <button key={category} type="button" role="tab" aria-selected={activeCategory === category} onClick={() => setActiveCategory(category)} className={`shrink-0 rounded-xl px-3 py-2 text-xs font-bold ${activeCategory === category ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:bg-muted"}`}>{category}</button>)}</div>
+            </div>
+            {isLoading && <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{[1,2,3,4,5,6].map((n) => <div key={n} className="h-28 animate-pulse rounded-2xl bg-muted" />)}</div>}
+            {isError && <div className="mt-4 rounded-2xl border border-destructive/20 bg-destructive/5 p-5 text-sm text-destructive">Unable to load the menu. Please refresh and try again.</div>}
+            {!isLoading && !isError && visibleMenu.length === 0 && <div className="mt-4 rounded-2xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">No menu items match your search.</div>}
+            {!isLoading && !isError && visibleMenu.length > 0 && <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{visibleMenu.map((m) => { const quantity = lines[m.id] ?? 0; return <article key={m.id} className={`rounded-2xl border bg-card p-4 shadow-sm ${quantity ? "border-primary/50 ring-1 ring-primary/20" : "border-border"}`}><div className="min-h-12"><p className="font-bold">{m.name}</p><p className="mt-1 text-sm font-semibold text-muted-foreground">{formatMoney(Number(m.price))}</p></div><p className={`mt-2 text-[10px] font-bold uppercase tracking-wide ${m.is_available ? "text-muted-foreground" : "text-destructive"}`}>{m.is_available ? "Available" : "Unavailable"}</p><div className="mt-3 flex items-center justify-between gap-2"><button type="button" aria-label={`Remove one ${m.name}`} disabled={!quantity} onClick={() => bump(m.id, -1)} className="grid h-10 w-10 place-items-center rounded-xl border border-border text-lg font-bold disabled:opacity-40">−</button><span className="min-w-6 text-center font-bold">{quantity}</span><button type="button" aria-label={`Add one ${m.name}`} disabled={!m.is_available} onClick={() => bump(m.id, 1)} className="grid h-10 w-10 place-items-center rounded-xl bg-primary text-lg font-bold text-primary-foreground disabled:opacity-40">+</button></div></article>; })}</div>}
           </section>
-
-          <aside className="h-fit rounded-2xl border border-border bg-card p-4 sm:p-5 lg:sticky lg:top-6">
-            <h2 className="text-lg font-bold">Order summary</h2>
-            <label className="mt-4 block text-sm font-semibold">Customer name
-              <input value={customer} onChange={(e) => setCustomer(e.target.value)} placeholder="Customer name" className="mt-1.5 h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
-            </label>
-            <label className="mt-4 block text-sm font-semibold">Payment method
-              <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="mt-1.5 h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30">
-                <option value="Cash">Cash</option>
-                <option value="M-Pesa">M-Pesa</option>
-              </select>
-            </label>
-            <label className="mt-4 block text-sm font-semibold">Notes
-              <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="mt-1.5 w-full resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
-            </label>
-            <ul className="mt-4 space-y-2 border-t border-border pt-4 text-sm">
-              {items.length === 0 && <li className="text-muted-foreground">No items yet.</li>}
-              {items.map((i) => <li key={i.name} className="flex justify-between gap-2"><span>{i.quantity} × {i.name}</span><span className="shrink-0 font-semibold">{formatMoney(i.price * i.quantity)}</span></li>)}
-            </ul>
-            <p className="mt-4 flex justify-between border-t border-border pt-4 text-base font-bold"><span>Total</span><span>{formatMoney(total)}</span></p>
-            <button onClick={submit} disabled={saving} className="mt-5 h-12 w-full rounded-xl bg-primary text-sm font-bold text-primary-foreground shadow-sm active:scale-[.99] disabled:opacity-60">{saving ? "Saving..." : "Save order"}</button>
+          <aside className="h-fit rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5 lg:sticky lg:top-6">
+            <div className="flex items-center justify-between"><div><h2 className="text-lg font-bold">Current order</h2><p className="text-xs text-muted-foreground">{itemCount} item{itemCount === 1 ? "" : "s"}</p></div>{itemCount > 0 && <button type="button" onClick={() => setLines({})} className="text-xs font-bold text-destructive">Clear</button>}</div>
+            <label className="mt-4 block text-sm font-semibold">Customer name<input value={customer} onChange={(e) => setCustomer(e.target.value)} placeholder="Walk-in customer" className="mt-1.5 h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30" /></label>
+            <label className="mt-3 block text-sm font-semibold">Payment method<select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="mt-1.5 h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30"><option value="Cash">Cash</option><option value="M-Pesa">M-Pesa</option></select></label>
+            <label className="mt-3 block text-sm font-semibold">Notes<textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Optional order note" className="mt-1.5 w-full resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30" /></label>
+            <div className="mt-4 border-t border-border pt-4">{items.length === 0 ? <p className="py-6 text-center text-sm text-muted-foreground">Select menu items to start.</p> : <ul className="space-y-3">{items.map((i) => <li key={i.name} className="flex items-center justify-between gap-3 text-sm"><span className="min-w-0 truncate"><b>{i.quantity}×</b> {i.name}</span><span className="shrink-0 font-semibold">{formatMoney(i.price * i.quantity)}</span></li>)}</ul>}</div>
+            <div className="mt-4 flex items-center justify-between border-t border-border pt-4"><span className="font-bold">Total</span><span className="text-xl font-black">{formatMoney(total)}</span></div>
+            <button onClick={submit} disabled={saving || items.length === 0} className="mt-4 h-12 w-full rounded-xl bg-primary text-sm font-bold text-primary-foreground shadow-sm disabled:opacity-50">{saving ? "Saving order..." : "Save order"}</button>
           </aside>
         </div>
       </main>

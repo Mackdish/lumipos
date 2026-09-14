@@ -6,6 +6,8 @@ export type Profile = {
   id: string;
   full_name: string;
   job_title: string;
+  email?: string | null;
+  approval_status?: "pending" | "approved" | "rejected";
 };
 
 export function useAuth() {
@@ -40,7 +42,7 @@ export function useAuth() {
     let active = true;
     supabase
       .from("profiles")
-      .select("id, full_name, job_title")
+      .select("id, full_name, job_title, email, approval_status")
       .eq("id", user.id)
       .maybeSingle()
       .then(({ data }) => {
@@ -65,5 +67,14 @@ export function useAuth() {
     user?.email?.split("@")[0] ||
     "Staff member";
 
-  return { session, user, profile, role, isManager: role === "manager", displayName, loading };
+  return {
+    session,
+    user,
+    profile,
+    role,
+    isManager: role === "manager",
+    isApproved: role === "manager" || role === "staff",
+    displayName,
+    loading,
+  };
 }

@@ -10,11 +10,19 @@ export type Profile = {
   approval_status?: "pending" | "approved" | "rejected";
 };
 
+export type Trial = {
+  plan: string;
+  trial_started_at: string;
+  trial_ends_at: string;
+};
+
 export function useAuth() {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [role, setRole] = useState<string | null>(null);
+  const [trial, setTrial] = useState<Trial | null>(null);
+  const [trialLoading, setTrialLoading] = useState(true);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,9 +45,14 @@ export function useAuth() {
     if (!user) {
       setProfile(null);
       setRole(null);
+      setTrial(null);
+      setTrialLoading(false);
       return;
     }
+
     let active = true;
+    setTrialLoading(true);
+
     supabase
       .from("profiles")
       .select("id, full_name, job_title, email, approval_status")
@@ -48,6 +61,7 @@ export function useAuth() {
       .then(({ data }) => {
         if (active) setProfile((data as Profile) ?? null);
       });
+
     supabase
       .from("user_roles")
       .select("role")
@@ -56,6 +70,19 @@ export function useAuth() {
       .then(({ data }) => {
         if (active) setRole((data?.role as string) ?? null);
       });
+
+    supabase
+      .from("subscription_settings" as any)
+      .select("plan, trial_started_at, trial_ends_at")
+      .eq("id", 1)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (!active) return;
+        if (error) console.error("Unable to load trial status:", error);
+        setTrial((data as Trial) ?? null);
+        setTrialLoading(false);
+      });
+
     return () => {
       active = false;
     };
@@ -67,14 +94,25 @@ export function useAuth() {
     user?.email?.split("@")[0] ||
     "Staff member";
 
+  const trialEndsAt = trial ? new Date(trial.trial_ends_at).getTime() : 0;
+  const trialActive = trial?.plan === "trial" && trialEndsAt > Date.now();
+  const trialExpired = Boolean(trial && !trialActive);
+  const trialDaysRemaining = trialActive
+    ? Math.max(1, Math.ceil((trialEndsAt - Date.now()) / (1000 * 60 * 60 * 24)))
+    : 0;
+
   return {
     session,
     user,
     profile,
     role,
+    trial,
+    trialActive,
+    trialExpired,
+    trialDaysRemaining,
     isManager: role === "manager",
     isApproved: role === "manager" || role === "staff",
     displayName,
-    loading,
+    loading: loading || trialLoading,
   };
 }

@@ -30,7 +30,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
     links.find((item) => item.to === "/new-order")!,
     links.find((item) => item.to === "/orders")!,
     links.find((item) => item.to === "/kitchen")!,
-    ...(isManager ? [links.find((item) => item.to === "/inventory")!] : []),
+    ...(isManager ? [links.find((item) => item.to === "/inventory")!, links.find((item) => item.to === "/menu")!] : []),
   ];
   const isActive = (to: string) => to === "/" ? pathname === "/" : pathname === to || pathname.startsWith(`${to}/`);
 
@@ -50,7 +50,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
       <div className="min-w-0 pb-16 lg:pb-0">{children}</div>
 
       <nav aria-label="Mobile navigation" className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 px-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_18px_rgba(0,0,0,0.06)] backdrop-blur lg:hidden">
-        <div className="mx-auto grid h-16 max-w-md grid-cols-5">
+        <div className={`mx-auto grid h-16 max-w-md ${isManager ? "grid-cols-6" : "grid-cols-5"}`}>
           {mobileLinks.map((item) => <Link key={item.to} to={item.to} className={`flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl text-[10px] font-bold ${isActive(item.to) ? "text-primary" : "text-muted-foreground"}`}><span className={`grid h-7 w-10 place-items-center rounded-xl text-base ${isActive(item.to) ? "bg-primary/10" : ""}`}>{item.icon}</span><span className="truncate">{item.label}</span></Link>)}
           <Link to="/shifts" className={`flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl text-[10px] font-bold ${isActive("/shifts") ? "bg-destructive/10 text-destructive" : "text-destructive"}`}><span aria-hidden="true" className="grid h-7 w-10 place-items-center rounded-xl text-base">↪</span><span className="truncate">End shift</span></Link>
         </div>

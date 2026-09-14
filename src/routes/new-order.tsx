@@ -57,7 +57,7 @@ function NewOrder() {
     setSaving(false);
     if (itemsError) { toast.error(itemsError.message); return; }
     toast.success("Order saved");
-    router.navigate({ to: "/orders/$id", params: { id: data.id } });
+    router.navigate({ to: "/orders/$id/receipt", params: { id: data.id } });
   }
 
   return (

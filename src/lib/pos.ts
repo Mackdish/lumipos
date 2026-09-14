@@ -4,6 +4,7 @@ export type MenuItem = {
   category: string;
   price: number;
   is_available: boolean;
+  image_url: string | null;
 };
 
 export type OrderItem = {

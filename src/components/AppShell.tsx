@@ -17,7 +17,7 @@ const nav = [
 export default function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { user, loading, displayName, isManager, role, profile } = useAuth();
+  const { user, loading, displayName, isManager, role, profile, trial, trialActive, trialExpired, trialDaysRemaining } = useAuth();
 
   useEffect(() => {
     if (!loading && !user) router.navigate({ to: "/auth" });
@@ -45,6 +45,28 @@ export default function AppShell({ children }: { children: ReactNode }) {
     );
   }
 
+  // The trial is shared by the restaurant account, so managers and approved
+  // cashiers see the same seven-day entitlement.
+  if (trialExpired) {
+    return (
+      <main className="grid min-h-screen place-items-center bg-secondary px-5 py-10">
+        <section className="w-full max-w-lg rounded-3xl border border-border bg-card p-7 text-center shadow-xl sm:p-10">
+          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-primary text-lg font-black text-primary-foreground">LP</div>
+          <p className="mt-5 text-xs font-black uppercase tracking-[.18em] text-primary">LumiPOS trial</p>
+          <h1 className="mt-2 text-3xl font-black tracking-tight">Your 7-day free trial has ended</h1>
+          <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-muted-foreground">
+            The restaurant account has reached the end of its free trial. Contact your LumiPOS administrator to continue using the POS.
+          </p>
+          <div className="mt-6 rounded-2xl bg-muted p-4 text-sm">
+            <p className="font-bold">Trial ended</p>
+            {trial?.trial_ends_at && <p className="mt-1 text-muted-foreground">{new Date(trial.trial_ends_at).toLocaleDateString()}</p>}
+          </div>
+          <button type="button" onClick={async () => { await supabase.auth.signOut(); router.navigate({ to: "/auth" }); }} className="mt-6 min-h-11 rounded-xl border border-border px-5 text-sm font-bold hover:bg-muted">Sign out</button>
+        </section>
+      </main>
+    );
+  }
+
   const links = isManager ? [...nav, { to: "/menu", label: "Menu", icon: "☰" }, { to: "/user-management", label: "User management", icon: "♙" }] : nav;
   const mobileLinks = [
     links.find((item) => item.to === "/new-order")!,
@@ -64,10 +86,20 @@ export default function AppShell({ children }: { children: ReactNode }) {
       <aside className="hidden min-h-screen border-r border-border bg-card p-4 lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col">
         <Link to="/" className="mb-10 flex items-center gap-3 px-2 pt-2"><span className="grid h-10 w-10 place-items-center rounded-xl bg-primary text-sm font-black text-primary-foreground">LP</span><span><b className="block text-sm">LumiPOS</b><span className="block text-xs text-muted-foreground">Restaurant operations</span></span></Link>
         <nav aria-label="Main navigation" className="space-y-1">{links.map((item) => <Link key={item.to} to={item.to} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${isActive(item.to) ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}><span aria-hidden="true" className="grid h-6 w-6 place-items-center text-base">{item.icon}</span>{item.label}</Link>)}</nav>
-        <div className="mt-auto border-t border-border pt-4"><p className="px-3 pb-3 text-xs text-muted-foreground">Signed in as <b className="block text-foreground">{displayName}</b></p><Link to="/shifts" className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-destructive hover:bg-destructive/10"><span aria-hidden="true" className="grid h-6 w-6 place-items-center">↪</span>End shift</Link></div>
+        <div className="mt-auto border-t border-border pt-4">
+          {trialActive && <p className="mb-3 rounded-xl bg-primary/10 px-3 py-2 text-xs font-bold text-primary">Free trial · {trialDaysRemaining} day{trialDaysRemaining === 1 ? "" : "s"} left</p>}
+          <p className="px-3 pb-3 text-xs text-muted-foreground">Signed in as <b className="block text-foreground">{displayName}</b></p><Link to="/shifts" className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-destructive hover:bg-destructive/10"><span aria-hidden="true" className="grid h-6 w-6 place-items-center">↪</span>End shift</Link>
+        </div>
       </aside>
 
-      <div className="min-w-0 pb-16 lg:pb-0">{children}</div>
+      <div className="min-w-0 pb-16 lg:pb-0">
+        {trialActive && trialDaysRemaining <= 2 && (
+          <div className="mx-4 mt-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm font-semibold text-amber-900 sm:mx-8 lg:mx-10">
+            Your LumiPOS free trial ends in {trialDaysRemaining} day{trialDaysRemaining === 1 ? "" : "s"}. Contact your administrator to continue after the trial.
+          </div>
+        )}
+        {children}
+      </div>
 
       <nav aria-label="Mobile navigation" className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 px-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_18px_rgba(0,0,0,0.06)] backdrop-blur lg:hidden">
         <div className={`mx-auto grid h-16 max-w-md ${isManager ? "grid-cols-6" : "grid-cols-5"}`}>

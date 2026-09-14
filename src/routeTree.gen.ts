@@ -92,7 +92,7 @@ declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
     '/': { id: '/'; path: '/'; fullPath: '/'; preLoaderRoute: typeof IndexRouteImport; parentRoute: typeof rootRouteImport }
     '/auth': { id: '/auth'; path: '/auth'; fullPath: '/auth'; preLoaderRoute: typeof AuthRouteImport; parentRoute: typeof rootRouteImport }
-    '/daily-summary': { id: '/daily-summary'; path: '/daily-summary'; fullPath: '/daily-summary'; preLoaderRoute: typeof IndexRouteImport; parentRoute: typeof rootRouteImport }
+    '/daily-summary': { id: '/daily-summary'; path: '/daily-summary'; fullPath: '/daily-summary'; preLoaderRoute: typeof DailySummaryRouteImport; parentRoute: typeof rootRouteImport }
     '/menu': { id: '/menu'; path: '/menu'; fullPath: '/menu'; preLoaderRoute: typeof MenuRouteImport; parentRoute: typeof rootRouteImport }
     '/new-order': { id: '/new-order'; path: '/new-order'; fullPath: '/new-order'; preLoaderRoute: typeof NewOrderRouteImport; parentRoute: typeof rootRouteImport }
     '/orders/': { id: '/orders/'; path: '/orders'; fullPath: '/orders/'; preLoaderRoute: typeof OrdersIndexRouteImport; parentRoute: typeof rootRouteImport }

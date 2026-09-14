@@ -17,6 +17,7 @@ import { Route as OrdersIndexRouteImport } from './routes/orders.index'
 import { Route as OrdersIdRouteImport } from './routes/orders.$id'
 import { Route as OrdersIdReceiptRouteImport } from './routes/orders.$id.receipt'
 import { Route as ShiftsRouteImport } from './routes/shifts'
+import { Route as UserManagementRouteImport } from './routes/user-management'
 
 const IndexRoute = IndexRouteImport.update({ id: '/', path: '/', getParentRoute: () => rootRouteImport } as any)
 const AuthRoute = AuthRouteImport.update({ id: '/auth', path: '/auth', getParentRoute: () => rootRouteImport } as any)
@@ -27,6 +28,7 @@ const OrdersIndexRoute = OrdersIndexRouteImport.update({ id: '/orders/', path: '
 const OrdersIdRoute = OrdersIdRouteImport.update({ id: '/orders/$id', path: '/orders/$id', getParentRoute: () => rootRouteImport } as any)
 const OrdersIdReceiptRoute = OrdersIdReceiptRouteImport.update({ id: '/orders/$id/receipt', path: '/orders/$id/receipt', getParentRoute: () => rootRouteImport } as any)
 const ShiftsRoute = ShiftsRouteImport.update({ id: '/shifts', path: '/shifts', getParentRoute: () => rootRouteImport } as any)
+const UserManagementRoute = UserManagementRouteImport.update({ id: '/user-management', path: '/user-management', getParentRoute: () => rootRouteImport } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -38,6 +40,7 @@ export interface FileRoutesByFullPath {
   '/orders/$id/receipt': typeof OrdersIdReceiptRoute
   '/orders/': typeof OrdersIndexRoute
   '/shifts': typeof ShiftsRoute
+  '/user-management': typeof UserManagementRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -49,6 +52,7 @@ export interface FileRoutesByTo {
   '/orders/$id/receipt': typeof OrdersIdReceiptRoute
   '/orders': typeof OrdersIndexRoute
   '/shifts': typeof ShiftsRoute
+  '/user-management': typeof UserManagementRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -61,14 +65,15 @@ export interface FileRoutesById {
   '/orders/$id/receipt': typeof OrdersIdReceiptRoute
   '/orders/': typeof OrdersIndexRoute
   '/shifts': typeof ShiftsRoute
+  '/user-management': typeof UserManagementRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/daily-summary' | '/menu' | '/new-order' | '/orders/$id' | '/orders/$id/receipt' | '/orders/' | '/shifts'
+  fullPaths: '/' | '/auth' | '/daily-summary' | '/menu' | '/new-order' | '/orders/$id' | '/orders/$id/receipt' | '/orders/' | '/shifts' | '/user-management'
+  to: '/' | '/auth' | '/daily-summary' | '/menu' | '/new-order' | '/orders/$id' | '/orders/$id/receipt' | '/orders' | '/shifts' | '/user-management'
+  id: '__root__' | '/' | '/auth' | '/daily-summary' | '/menu' | '/new-order' | '/orders/$id' | '/orders/$id/receipt' | '/orders/' | '/shifts' | '/user-management'
   fileRoutesByTo: FileRoutesByTo
   fileRoutesById: FileRoutesById
-  to: '/' | '/auth' | '/daily-summary' | '/menu' | '/new-order' | '/orders/$id' | '/orders/$id/receipt' | '/orders' | '/shifts'
-  id: '__root__' | '/' | '/auth' | '/daily-summary' | '/menu' | '/new-order' | '/orders/$id' | '/orders/$id/receipt' | '/orders/' | '/shifts'
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
@@ -80,21 +85,23 @@ export interface RootRouteChildren {
   OrdersIdReceiptRoute: typeof OrdersIdReceiptRoute
   OrdersIndexRoute: typeof OrdersIndexRoute
   ShiftsRoute: typeof ShiftsRoute
+  UserManagementRoute: typeof UserManagementRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
     '/': { id: '/'; path: '/'; fullPath: '/'; preLoaderRoute: typeof IndexRouteImport; parentRoute: typeof rootRouteImport }
     '/auth': { id: '/auth'; path: '/auth'; fullPath: '/auth'; preLoaderRoute: typeof AuthRouteImport; parentRoute: typeof rootRouteImport }
-    '/daily-summary': { id: '/daily-summary'; path: '/daily-summary'; fullPath: '/daily-summary'; preLoaderRoute: typeof DailySummaryRouteImport; parentRoute: typeof rootRouteImport }
+    '/daily-summary': { id: '/daily-summary'; path: '/daily-summary'; fullPath: '/daily-summary'; preLoaderRoute: typeof IndexRouteImport; parentRoute: typeof rootRouteImport }
     '/menu': { id: '/menu'; path: '/menu'; fullPath: '/menu'; preLoaderRoute: typeof MenuRouteImport; parentRoute: typeof rootRouteImport }
     '/new-order': { id: '/new-order'; path: '/new-order'; fullPath: '/new-order'; preLoaderRoute: typeof NewOrderRouteImport; parentRoute: typeof rootRouteImport }
     '/orders/': { id: '/orders/'; path: '/orders'; fullPath: '/orders/'; preLoaderRoute: typeof OrdersIndexRouteImport; parentRoute: typeof rootRouteImport }
     '/orders/$id': { id: '/orders/$id'; path: '/orders/$id'; fullPath: '/orders/$id'; preLoaderRoute: typeof OrdersIdRouteImport; parentRoute: typeof rootRouteImport }
     '/orders/$id/receipt': { id: '/orders/$id/receipt'; path: '/orders/$id/receipt'; fullPath: '/orders/$id/receipt'; preLoaderRoute: typeof OrdersIdReceiptRouteImport; parentRoute: typeof rootRouteImport }
     '/shifts': { id: '/shifts'; path: '/shifts'; fullPath: '/shifts'; preLoaderRoute: typeof ShiftsRouteImport; parentRoute: typeof rootRouteImport }
+    '/user-management': { id: '/user-management'; path: '/user-management'; fullPath: '/user-management'; preLoaderRoute: typeof UserManagementRouteImport; parentRoute: typeof rootRouteImport }
   }
 }
 
-const rootRouteChildren: RootRouteChildren = { IndexRoute, AuthRoute, DailySummaryRoute, MenuRoute, NewOrderRoute, OrdersIdRoute, OrdersIdReceiptRoute, OrdersIndexRoute, ShiftsRoute }
+const rootRouteChildren: RootRouteChildren = { IndexRoute, AuthRoute, DailySummaryRoute, MenuRoute, NewOrderRoute, OrdersIdRoute, OrdersIdReceiptRoute, OrdersIndexRoute, ShiftsRoute, UserManagementRoute }
 export const routeTree = rootRouteImport._addFileChildren(rootRouteChildren)._addFileTypes<FileRouteTypes>()

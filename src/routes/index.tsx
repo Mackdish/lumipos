@@ -26,7 +26,7 @@ function Metric({ label, value, hint }: { label: string; value: string; hint?: s
 }
 
 function Dashboard() {
-  const { displayName } = useAuth();
+  const { displayName, isManager } = useAuth();
   const { data: orders = [], isLoading, isError } = useQuery({
     queryKey: ["orders"],
     queryFn: async () => {
@@ -36,6 +36,19 @@ function Dashboard() {
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as unknown as Order[];
+    },
+  });
+  const { data: pendingStaff = [] } = useQuery({
+    queryKey: ["pending-staff-count"],
+    enabled: isManager,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("profiles")
+        .select("id, full_name, email, created_at")
+        .eq("approval_status", "pending")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
     },
   });
 
@@ -59,6 +72,25 @@ function Dashboard() {
             <Link to="/new-order" className="inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground shadow-sm transition hover:bg-primary/90">+ New order</Link>
           </div>
         </section>
+
+        {isManager && pendingStaff.length > 0 && (
+          <section className="mt-5 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 shadow-sm sm:p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-wider text-amber-700">Action required</p>
+                <h2 className="mt-1 text-lg font-bold">{pendingStaff.length} cashier registration{pendingStaff.length === 1 ? "" : "s"} awaiting approval</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Review new staff accounts before they can access the POS.</p>
+              </div>
+              <Link to="/user-management" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground">Open user management →</Link>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {pendingStaff.slice(0, 3).map((staff: { id: string; full_name: string; email: string | null }) => (
+                <span key={staff.id} className="rounded-full bg-background px-3 py-1.5 text-xs font-semibold">{staff.full_name} · {staff.email}</span>
+              ))}
+              {pendingStaff.length > 3 && <span className="rounded-full bg-background px-3 py-1.5 text-xs font-semibold">+{pendingStaff.length - 3} more</span>}
+            </div>
+          </section>
+        )}
 
         <section className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           <Metric label="Orders" value={String(today.length)} />

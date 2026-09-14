@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import AppShell from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
@@ -82,7 +82,6 @@ function KitchenPage() {
           <div className="mt-6 rounded-2xl border border-border bg-card p-10 text-center shadow-sm">
             <p className="text-lg font-bold">Kitchen is clear</p>
             <p className="mt-1 text-sm text-muted-foreground">New orders will appear here automatically.</p>
-            <Link to="/new-order" className="mt-5 inline-flex min-h-11 items-center rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground">Create order</Link>
           </div>
         ) : (
           <div className="mt-6 grid gap-4 lg:grid-cols-3">

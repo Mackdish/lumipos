@@ -1,6 +1,6 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import AppShell from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -33,22 +33,20 @@ function Shifts() {
     queryFn: async () => { let q = db.from("staff_shifts").select("*").order("started_at", { ascending: false }).limit(isManager ? 50 : 20); if (!isManager) q = q.eq("user_id", user!.id); const { data, error } = await q; if (error) throw error; return (data ?? []) as Shift[]; },
   });
   const cash = useQuery({
-    queryKey: ["shift-cash", active.data?.id], enabled: !!active.data,
-    refetchInterval: 30000,
+    queryKey: ["shift-cash", active.data?.id], enabled: !!active.data, refetchInterval: 30000,
     queryFn: async () => { const { data, error } = await supabase.from("orders").select("total").eq("employee_id", user!.id).eq("payment_method", "Cash").eq("payment_status", "PAID").gte("created_at", active.data!.started_at); if (error) throw error; return (data ?? []).reduce((s, o) => s + Number(o.total || 0), 0); },
   });
-
   const expected = Number(active.data?.opening_cash || 0) + Number(cash.data || 0);
   const variance = closing === "" ? null : Number(closing) - expected;
 
-  async function start(e: React.FormEvent) {
+  async function start(e: FormEvent) {
     e.preventDefault(); setError(null); const amount = Number(opening); if (!Number.isFinite(amount) || amount < 0) return setError("Enter a valid opening cash amount.");
     setBusy(true); const { error } = await db.from("staff_shifts").insert({ user_id: user!.id, staff_name: displayName, opening_cash: amount, notes: notes.trim() || null }); setBusy(false);
     if (error) return setError(error.code === "23505" ? "You already have an open shift." : error.message);
     setOpening(""); setNotes(""); qc.invalidateQueries({ queryKey: ["active-shift", user?.id] }); qc.invalidateQueries({ queryKey: ["shift-history", user?.id, isManager] });
   }
 
-  async function end(e: React.FormEvent) {
+  async function end(e: FormEvent) {
     e.preventDefault(); setError(null); if (!active.data) return; const amount = Number(closing); if (!Number.isFinite(amount) || amount < 0) return setError("Enter a valid closing cash amount.");
     setBusy(true); const { error } = await db.from("staff_shifts").update({ ended_at: new Date().toISOString(), closing_cash: amount, notes: notes.trim() || active.data.notes }).eq("id", active.data.id).eq("user_id", user!.id).is("ended_at", null); setBusy(false);
     if (error) return setError(error.message);

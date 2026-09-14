@@ -17,15 +17,35 @@ const nav = [
 export default function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { user, loading, displayName, isManager } = useAuth();
+  const { user, loading, displayName, isManager, role, profile } = useAuth();
 
   useEffect(() => {
     if (!loading && !user) router.navigate({ to: "/auth" });
   }, [loading, user, router]);
 
-  if (loading || !user) return <div className="grid min-h-screen place-items-center bg-background px-4 text-center text-sm text-muted-foreground">Loading your shift...</div>;
+  if (loading || !user) return <div className="grid min-h-screen place-items-center bg-background px-4 text-center text-sm text-muted-foreground">Loading your account...</div>;
 
-  const links = isManager ? [...nav, { to: "/menu", label: "Menu", icon: "☰" }] : nav;
+  // A registered cashier has no role until the manager approves the account.
+  // Keep the entire POS unavailable while approval is pending/rejected.
+  if (!role) {
+    const rejected = profile?.approval_status === "rejected";
+    return (
+      <main className="grid min-h-screen place-items-center bg-secondary px-5 py-10">
+        <section className="w-full max-w-md rounded-3xl border border-border bg-card p-7 text-center shadow-xl sm:p-9">
+          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-primary text-lg font-black text-primary-foreground">LP</div>
+          <h1 className="mt-5 text-2xl font-black">{rejected ? "Account not approved" : "Waiting for approval"}</h1>
+          <p className="mt-3 text-sm leading-6 text-muted-foreground">
+            {rejected
+              ? "Your cashier registration was not approved. Please contact the restaurant manager."
+              : "Your cashier account has been registered successfully. A manager must approve your account before you can access LumiPOS."}
+          </p>
+          <button type="button" onClick={async () => { await supabase.auth.signOut(); router.navigate({ to: "/auth" }); }} className="mt-6 min-h-11 rounded-xl border border-border px-5 text-sm font-bold hover:bg-muted">Sign out</button>
+        </section>
+      </main>
+    );
+  }
+
+  const links = isManager ? [...nav, { to: "/menu", label: "Menu", icon: "☰" }, { to: "/user-management", label: "User management", icon: "♙" }] : nav;
   const mobileLinks = [
     links.find((item) => item.to === "/new-order")!,
     links.find((item) => item.to === "/orders")!,

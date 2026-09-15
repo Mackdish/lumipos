@@ -1,4 +1,4 @@
-const CACHE_NAME = "lumipos-assets-v2";
+const CACHE_NAME = "tillbook-assets-v3";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();

@@ -70,10 +70,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "LumiPOS" },
+      { title: "TillBook" },
       { name: "description", content: "Hotel and restaurant food ordering POS." },
-      { name: "author", content: "LumiPOS" },
-      { property: "og:title", content: "LumiPOS" },
+      { name: "author", content: "TillBook" },
+      { property: "og:title", content: "TillBook" },
       { property: "og:description", content: "Hotel and restaurant food ordering POS." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -121,7 +121,7 @@ function RootComponent() {
         });
         await registration.update();
       } catch (error) {
-        console.error("LumiPOS service worker registration failed:", error);
+        console.error("TillBook service worker registration failed:", error);
       }
     };
 

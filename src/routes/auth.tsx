@@ -6,8 +6,8 @@ import { useAuth } from "@/hooks/useAuth";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Staff sign in | LumiPOS" },
-      { name: "description", content: "Secure staff sign in and cashier registration for LumiPOS." },
+      { title: "Staff sign in | TillBook" },
+      { name: "description", content: "Secure staff sign in and cashier registration for TillBook." },
     ],
   }),
   component: AuthPage,
@@ -48,12 +48,10 @@ function AuthPage() {
         return;
       }
 
-      // Supabase may automatically create a session when email confirmation is disabled.
-      // Do not leave a newly registered cashier signed in before manager approval.
       if (data.session) await supabase.auth.signOut();
       setBusy(false);
       setMode("signin");
-      setMessage("Registration submitted. A manager must approve your cashier account before you can access LumiPOS.");
+      setMessage("Registration submitted. A manager must approve your cashier account before you can access TillBook.");
       return;
     }
 
@@ -70,12 +68,12 @@ function AuthPage() {
     <main className="min-h-screen bg-secondary px-5 py-10 sm:grid sm:place-items-center">
       <section className="mx-auto w-full max-w-[460px] rounded-3xl bg-card px-7 py-9 shadow-xl sm:px-10">
         <div className="mb-8 flex items-center gap-3">
-          <div className="grid h-11 w-11 place-items-center rounded-2xl bg-primary text-sm font-black text-primary-foreground">LP</div>
-          <div><p className="text-xs font-bold uppercase tracking-[.17em] text-primary">LumiPOS</p><p className="text-sm text-muted-foreground">Restaurant operations</p></div>
+          <div className="grid h-11 w-11 place-items-center rounded-2xl bg-primary text-sm font-black text-primary-foreground">TB</div>
+          <div><p className="text-xs font-bold uppercase tracking-[.17em] text-primary">TillBook</p><p className="text-sm text-muted-foreground">Restaurant operations</p></div>
         </div>
 
         <h1 className="text-3xl font-bold tracking-tight">
-          {mode === "signin" ? "Sign in to LumiPOS" : "Register as a cashier"}
+          {mode === "signin" ? "Sign in to TillBook" : "Register as a cashier"}
         </h1>
         <p className="mt-3 text-[15px] leading-6 text-muted-foreground">
           {mode === "signin"

@@ -1,5 +1,5 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +14,7 @@ export const Route = createFileRoute("/new-order")({
 
 function NewOrder() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { user, displayName } = useAuth();
   const [customer, setCustomer] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("Cash");
@@ -25,6 +26,10 @@ function NewOrder() {
 
   const { data: menu = [], isLoading, isError } = useQuery({
     queryKey: ["menu_items"],
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("menu_items")
@@ -37,7 +42,8 @@ function NewOrder() {
   });
 
   const categories = useMemo(() => ["All", ...Array.from(new Set(menu.map((m) => m.category)))], [menu]);
-  const visibleMenu = useMemo(() => menu.filter((m) => m.is_available && (activeCategory === "All" || m.category === activeCategory) && m.name.toLowerCase().includes(search.trim().toLowerCase())), [menu, activeCategory, search]);
+  const normalizedSearch = search.trim().toLowerCase();
+  const visibleMenu = useMemo(() => menu.filter((m) => m.is_available && (activeCategory === "All" || m.category === activeCategory) && (!normalizedSearch || m.name.toLowerCase().includes(normalizedSearch))), [menu, activeCategory, normalizedSearch]);
   const items: OrderItem[] = menu.filter((m) => (lines[m.id] ?? 0) > 0).map((m) => ({ name: m.name, quantity: lines[m.id]!, price: Number(m.price) }));
   const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
@@ -60,6 +66,7 @@ function NewOrder() {
     const { error: itemsError } = await supabase.from("order_items").insert(items.map((i) => ({ order_id: data.id, name: i.name, quantity: i.quantity, price: i.price })));
     setSaving(false);
     if (itemsError) { toast.error(itemsError.message); return; }
+    queryClient.invalidateQueries({ queryKey: ["orders"] });
     toast.success("Order saved");
     router.navigate({ to: "/orders/$id/receipt", params: { id: data.id } });
   }
@@ -77,7 +84,7 @@ function NewOrder() {
             {isLoading && <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-2 xl:grid-cols-3">{[1,2,3,4,5,6].map((n) => <div key={n} className="h-52 animate-pulse rounded-2xl bg-muted" />)}</div>}
             {isError && <div className="mt-4 rounded-2xl border border-destructive/20 bg-destructive/5 p-5 text-sm text-destructive">Unable to load the menu. Please refresh and try again.</div>}
             {!isLoading && !isError && visibleMenu.length === 0 && <div className="mt-4 rounded-2xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">No available menu items match your search.</div>}
-            {!isLoading && !isError && visibleMenu.length > 0 && <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-2 xl:grid-cols-3">{visibleMenu.map((m) => { const quantity = lines[m.id] ?? 0; return <button key={m.id} type="button" onClick={() => bump(m.id, 1)} aria-label={`Add ${m.name} to order`} className={`group overflow-hidden rounded-2xl border bg-card text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/30 ${quantity ? "border-primary/60 ring-1 ring-primary/20" : "border-border"}`}><div className="relative aspect-[4/3] bg-muted">{m.image_url ? <img src={m.image_url} alt={m.name} loading="lazy" className="h-full w-full object-cover transition duration-200 group-hover:scale-[1.02]" /> : <div className="grid h-full place-items-center text-sm font-semibold text-muted-foreground">No image</div>}{quantity > 0 && <span className="absolute right-2 top-2 grid h-8 min-w-8 place-items-center rounded-full bg-primary px-2 text-xs font-black text-primary-foreground shadow">{quantity}</span>}</div><div className="p-3"><p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{m.category}</p><div className="mt-1 flex items-center justify-between gap-2"><p className="truncate font-bold">{m.name}</p><p className="shrink-0 text-sm font-black text-primary">{formatMoney(Number(m.price))}</p></div><div className="mt-2 flex items-center justify-between"><span className="text-xs text-muted-foreground">Tap to add</span>{quantity > 0 && <span className="text-xs font-bold text-primary">{quantity} selected</span>}</div></div></button>; })}</div>}
+            {!isLoading && !isError && visibleMenu.length > 0 && <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-2 xl:grid-cols-3">{visibleMenu.map((m) => { const quantity = lines[m.id] ?? 0; return <button key={m.id} type="button" onClick={() => bump(m.id, 1)} aria-label={`Add ${m.name} to order`} className={`group overflow-hidden rounded-2xl border bg-card text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/30 ${quantity ? "border-primary/60 ring-1 ring-primary/20" : "border-border"}`}><div className="relative aspect-[4/3] bg-muted">{m.image_url ? <img src={m.image_url} alt={m.name} loading="lazy" decoding="async" className="h-full w-full object-cover transition duration-200 group-hover:scale-[1.02]" /> : <div className="grid h-full place-items-center text-sm font-semibold text-muted-foreground">No image</div>}{quantity > 0 && <span className="absolute right-2 top-2 grid h-8 min-w-8 place-items-center rounded-full bg-primary px-2 text-xs font-black text-primary-foreground shadow">{quantity}</span>}</div><div className="p-3"><p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{m.category}</p><div className="mt-1 flex items-center justify-between gap-2"><p className="truncate font-bold">{m.name}</p><p className="shrink-0 text-sm font-black text-primary">{formatMoney(Number(m.price))}</p></div><div className="mt-2 flex items-center justify-between"><span className="text-xs text-muted-foreground">Tap to add</span>{quantity > 0 && <span className="text-xs font-bold text-primary">{quantity} selected</span>}</div></div></button>; })}</div>}
           </section>
           <aside className="h-fit rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5 lg:sticky lg:top-6">
             <div className="flex items-center justify-between"><div><h2 className="text-lg font-bold">Current order</h2><p className="text-xs text-muted-foreground">{itemCount} item{itemCount === 1 ? "" : "s"}</p></div>{itemCount > 0 && <button type="button" onClick={() => setLines({})} className="text-xs font-bold text-destructive">Clear</button>}</div>

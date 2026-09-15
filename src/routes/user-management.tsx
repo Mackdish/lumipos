@@ -39,14 +39,52 @@ function UserManagement() {
   });
 
   async function createCashier(event: FormEvent) {
-    event.preventDefault(); setBusy(true); setCredentials(null);
-    const { data, error } = await supabase.functions.invoke("create-cashier", { body: { full_name: name.trim(), email: email.trim(), ...(password.trim() ? { password: password.trim() } : {}) } });
-    setBusy(false);
-    if (error || data?.error) { toast.error(error?.message || data?.error || "Unable to create cashier"); return; }
-    setCredentials({ email: data.cashier.email, password: data.temporary_password, emailSent: Boolean(data.email_sent) });
-    setName(""); setEmail(""); setPassword("");
-    toast.success("Cashier account created");
-    await queryClient.invalidateQueries({ queryKey: ["hotel-cashiers", hotel?.id] });
+    event.preventDefault();
+    setBusy(true);
+    setCredentials(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("create-cashier", {
+        body: {
+          full_name: name.trim(),
+          email: email.trim(),
+          ...(password.trim() ? { password: password.trim() } : {}),
+        },
+      });
+
+      let functionError = data?.error as string | undefined;
+      if (error) {
+        try {
+          const response = (error as any).context as Response | undefined;
+          if (response) {
+            const payload = await response.clone().json();
+            functionError = payload?.error || functionError;
+          }
+        } catch {
+          // Keep the SDK error if the function response is not JSON.
+        }
+      }
+
+      if (error || functionError) {
+        toast.error(functionError || error?.message || "Unable to create cashier", { duration: 8000 });
+        return;
+      }
+
+      setCredentials({
+        email: data.cashier.email,
+        password: data.temporary_password,
+        emailSent: Boolean(data.email_sent),
+      });
+      setName("");
+      setEmail("");
+      setPassword("");
+      toast.success("Cashier account created");
+      await queryClient.invalidateQueries({ queryKey: ["hotel-cashiers", hotel?.id] });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to create cashier", { duration: 8000 });
+    } finally {
+      setBusy(false);
+    }
   }
 
   if (!loading && !isManager) return <AppShell><main className="mx-auto max-w-3xl px-5 py-16"><div className="rounded-2xl border border-border bg-card p-6"><p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Access restricted</p><h1 className="mt-2 text-2xl font-bold">Managers only</h1></div></main></AppShell>;

@@ -21,7 +21,54 @@ export const Route = createFileRoute("/menu")({
 
 const CATEGORIES = ["Breakfast", "Main meals", "Sides", "Drinks"];
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+const MAX_UPLOAD_SIZE = 1.5 * 1024 * 1024;
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+async function prepareImageForUpload(file: File): Promise<{ file: File; type: string; extension: string }> {
+  if (file.size <= MAX_UPLOAD_SIZE && file.type === "image/webp") {
+    return { file, type: file.type, extension: "webp" };
+  }
+
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    image.decoding = "async";
+    image.src = objectUrl;
+    await image.decode();
+
+    const maxDimension = 1600;
+    const scale = Math.min(1, maxDimension / Math.max(image.naturalWidth, image.naturalHeight));
+    const width = Math.max(1, Math.round(image.naturalWidth * scale));
+    const height = Math.max(1, Math.round(image.naturalHeight * scale));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Your browser could not prepare the image.");
+    context.drawImage(image, 0, 0, width, height);
+
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/webp", 0.82));
+    if (!blob) throw new Error("Your browser could not compress the image.");
+
+    const prepared = new File([blob], `${file.name.replace(/\.[^.]+$/, "") || "menu-image"}.webp`, {
+      type: "image/webp",
+      lastModified: Date.now(),
+    });
+
+    return { file: prepared, type: "image/webp", extension: "webp" };
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+function getUploadErrorMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error ?? "Unknown error");
+  if (/networkerror|failed to fetch|network request failed|load failed/i.test(message)) {
+    return "Could not reach Supabase image storage. Check your internet connection and Supabase Storage, then try again.";
+  }
+  return message;
+}
 
 function MenuManagement() {
   const { isManager, loading, user } = useAuth();
@@ -88,6 +135,7 @@ function MenuManagement() {
   }
 
   function clearImage() {
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
     setImage(null);
     setImagePreview("");
   }
@@ -97,17 +145,31 @@ function MenuManagement() {
       const value = Number(price);
       if (!name.trim()) throw new Error("Give the dish a name.");
       if (!Number.isFinite(value) || value <= 0) throw new Error("Enter a price above zero.");
+      if (!user?.id) throw new Error("Your session is not ready. Please sign in again.");
 
       let imageUrl: string | null = null;
       let uploadedPath: string | null = null;
 
       if (image) {
-        const extension = image.name.split(".").pop()?.toLowerCase() || "jpg";
-        const path = `${user!.id}/${crypto.randomUUID()}.${extension}`;
-        const { error: uploadError } = await supabase.storage
-          .from("menu-images")
-          .upload(path, image, { cacheControl: "3600", contentType: image.type, upsert: false });
-        if (uploadError) throw new Error(`Image upload failed: ${uploadError.message}`);
+        const prepared = await prepareImageForUpload(image);
+        if (prepared.file.size > MAX_UPLOAD_SIZE) {
+          throw new Error("Image is still too large after compression. Please choose a smaller photo.");
+        }
+
+        const path = `${user.id}/${crypto.randomUUID()}.${prepared.extension}`;
+        try {
+          const { error: uploadError } = await supabase.storage
+            .from("menu-images")
+            .upload(path, prepared.file, {
+              cacheControl: "31536000",
+              contentType: prepared.type,
+              upsert: false,
+            });
+          if (uploadError) throw uploadError;
+        } catch (uploadError) {
+          throw new Error(`Image upload failed: ${getUploadErrorMessage(uploadError)}`);
+        }
+
         uploadedPath = path;
         imageUrl = supabase.storage.from("menu-images").getPublicUrl(path).data.publicUrl;
       }
@@ -215,7 +277,7 @@ function MenuManagement() {
                 </div>
               </div>
             </div>
-            <button type="submit" disabled={addItem.isPending} className="min-h-11 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 lg:col-start-4">{addItem.isPending ? "Uploading…" : "Add dish"}</button>
+            <button type="submit" disabled={addItem.isPending} className="min-h-11 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 lg:col-start-4">{addItem.isPending ? "Adding dish…" : "Add dish"}</button>
           </form>
         </section>
 

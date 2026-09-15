@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "LumiPOS",
-  "short_name": "LumiPOS",
+  "name": "TillBook",
+  "short_name": "TillBook",
   "description": "Hotel and restaurant food ordering POS.",
   "start_url": "/",
   "scope": "/",

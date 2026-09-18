@@ -1,4 +1,4 @@
--- LumiPOS: fix menu image uploads
+-- TillBook: fix menu image uploads
 -- Managers can upload, update and remove files in the menu-images bucket.
 -- Public read access is required because menu image URLs are public.
 

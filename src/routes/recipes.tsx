@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { formatMoney } from "@/lib/pos";
 
 export const Route = createFileRoute("/recipes")({
-  head: () => ({ meta: [{ title: "Recipes & food costing | LumiPOS" }, { name: "description", content: "Build recipes and calculate dish costs, profit and margins." }] }),
+  head: () => ({ meta: [{ title: "Recipes & food costing | TillBook" }, { name: "description", content: "Build recipes and calculate dish costs, profit and margins." }] }),
   component: RecipesPage,
 });
 

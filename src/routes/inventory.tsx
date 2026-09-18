@@ -10,7 +10,7 @@ import { formatMoney } from "@/lib/pos";
 export const Route = createFileRoute("/inventory")({
   head: () => ({
     meta: [
-      { title: "Inventory | LumiPOS" },
+      { title: "Inventory | TillBook" },
       { name: "description", content: "Manage stock levels, costs, suppliers and stock movements." },
     ],
   }),

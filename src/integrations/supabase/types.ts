@@ -23,9 +23,9 @@ export type Database = {
         Relationships: [{ foreignKeyName: "order_items_order_id_fkey"; columns: ["order_id"]; isOneToOne: false; referencedRelation: "orders"; referencedColumns: ["id"] }]
       }
       orders: {
-        Row: { approved_at: string | null; approved_by: string | null; created_at: string; customer: string; employee_id: string | null; employee_name: string; id: string; kitchen_status: string; notes: string | null; order_number: number; order_status: string; payment_method: string; payment_status: string; table_number: string | null; total: number }
-        Insert: { approved_at?: string | null; approved_by?: string | null; created_at?: string; customer?: string; employee_id?: string | null; employee_name?: string; id?: string; kitchen_status?: string; notes?: string | null; order_number?: number; order_status?: string; payment_method?: string; payment_status?: string; table_number?: string | null; total?: number }
-        Update: { approved_at?: string | null; approved_by?: string | null; created_at?: string; customer?: string; employee_id?: string | null; employee_name?: string; id?: string; kitchen_status?: string; notes?: string | null; order_number?: number; order_status?: string; payment_method?: string; payment_status?: string; table_number?: string | null; total?: number }
+        Row: { approved_at: string | null; approved_by: string | null; created_at: string; customer: string; employee_id: string | null; employee_name: string; id: string; notes: string | null; order_number: number; order_status: string; payment_method: string; payment_status: string; table_number: string | null; total: number }
+        Insert: { approved_at?: string | null; approved_by?: string | null; created_at?: string; customer?: string; employee_id?: string | null; employee_name?: string; id?: string; notes?: string | null; order_number?: number; order_status?: string; payment_method?: string; payment_status?: string; table_number?: string | null; total?: number }
+        Update: { approved_at?: string | null; approved_by?: string | null; created_at?: string; customer?: string; employee_id?: string | null; employee_name?: string; id?: string; notes?: string | null; order_number?: number; order_status?: string; payment_method?: string; payment_status?: string; table_number?: string | null; total?: number }
         Relationships: []
       }
       profiles: {

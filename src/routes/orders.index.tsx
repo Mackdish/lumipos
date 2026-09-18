@@ -245,8 +245,7 @@ function OrdersPage() {
                   >
                     {order.payment_status}
                   </span>
-                  <span className="rounded-full bg-muted px-2.5 py-1 text-[10px] font-bold uppercase text-muted-foreground">
-                  </span>
+                  <span className="rounded-full bg-muted px-2.5 py-1 text-[10px] font-bold uppercase text-muted-foreground">{order.kitchen_status}</span>
                 </div>
               </Link>
             ))}

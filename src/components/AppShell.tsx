@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 const nav = [
   { to: "/", label: "Home", icon: "⌂" }, { to: "/new-order", label: "New order", icon: "+" },
-  { to: "/orders", label: "Orders", icon: "▤" }, { to: "/kitchen", label: "Kitchen", icon: "▥" },
+  { to: "/orders", label: "Orders", icon: "▤" },
   { to: "/inventory", label: "Inventory", icon: "▦" }, { to: "/recipes", label: "Recipes", icon: "◈" },
   { to: "/daily-summary", label: "Summary", icon: "◔" },
 ];
@@ -48,7 +48,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
   if (trialExpired) return <main className="grid min-h-screen place-items-center bg-secondary px-5 py-10"><section className="w-full max-w-lg rounded-3xl border border-border bg-card p-7 text-center shadow-xl"><div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-primary text-lg font-black text-primary-foreground">TB</div><p className="mt-5 text-xs font-black uppercase tracking-[.18em] text-primary">{hotel?.name || "TillBook"} trial</p><h1 className="mt-2 text-3xl font-black tracking-tight">Your 7-day free trial has ended</h1><p className="mx-auto mt-3 max-w-md text-sm leading-6 text-muted-foreground">The hotel account has reached the end of its free trial. Contact the account administrator to continue using TillBook.</p><div className="mt-6 rounded-2xl bg-muted p-4 text-sm"><p className="font-bold">Trial ended</p>{trial?.trial_ends_at && <p className="mt-1 text-muted-foreground">{new Date(trial.trial_ends_at).toLocaleDateString()}</p>}</div><button type="button" disabled={signingOut} onClick={handleSignOut} className="mt-6 min-h-11 rounded-xl border border-border px-5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60">{signingOut ? "Signing out..." : "Sign out"}</button></section></main>;
 
   const links = isManager ? [...nav, { to: "/menu", label: "Menu", icon: "☰" }, { to: "/user-management", label: "Cashiers", icon: "♙" }] : nav;
-  const mobileLinks = [links.find((item) => item.to === "/new-order")!, links.find((item) => item.to === "/orders")!, links.find((item) => item.to === "/kitchen")!, ...(isManager ? [links.find((item) => item.to === "/inventory")!, links.find((item) => item.to === "/menu")!] : [])];
+  const mobileLinks = [links.find((item) => item.to === "/new-order")!, links.find((item) => item.to === "/orders")!, ...(isManager ? [links.find((item) => item.to === "/inventory")!, links.find((item) => item.to === "/menu")!] : [])];
   const isActive = (to: string) => to === "/" ? pathname === "/" : pathname === to || pathname.startsWith(`${to}/`);
   const style = { "--primary": hotel?.primary_color || "#1f7a4d", "--ring": hotel?.primary_color || "#1f7a4d", "--sidebar-primary": hotel?.primary_color || "#1f7a4d", "--background": hotel?.secondary_color || "#f4f7f5" } as React.CSSProperties;
 

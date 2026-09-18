@@ -1,4 +1,4 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
@@ -19,10 +19,8 @@ export const Route = createFileRoute("/new-order")({
 });
 
 function NewOrder() {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const { user, displayName } = useAuth();
-  const [customer, setCustomer] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [notes, setNotes] = useState("");
   const [search, setSearch] = useState("");
@@ -96,20 +94,18 @@ function NewOrder() {
   }
 
   async function submit() {
-    if (!customer.trim()) return toast.error("Add a customer name");
     if (items.length === 0) return toast.error("Add at least one menu item");
     setSaving(true);
     const clientId = generateClientId();
     const { data, error } = await supabase
       .from("orders")
       .insert({
-        customer: customer.trim(),
+        customer: clientId,
         employee_id: user?.id ?? null,
         employee_name: displayName,
         payment_method: paymentMethod,
         payment_status: paymentMethod === "Cash" ? "PAID" : "PENDING",
         order_status: "OPEN",
-        kitchen_status: "OPEN",
         total,
         notes: notes.trim() || null,
       })
@@ -140,9 +136,7 @@ function NewOrder() {
       `${paymentMethod === "Cash" ? "Order saved" : "Order awaiting approval"} · ${clientId}`,
     );
     setLines({});
-    setCustomer("");
     setNotes("");
-    void router.navigate({ to: "/orders/$id/receipt", params: { id: data.id } });
   }
 
   return (
@@ -280,7 +274,7 @@ function NewOrder() {
                 </button>
               )}
             </div>
-            <label className="mt-3 block text-sm font-semibold">\n              Customer name\n              <input value={customer} onChange={(e) => setCustomer(e.target.value)} placeholder="Walk-in customer" className="mt-1.5 h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30" />\n            </label>\n            <div className="mt-4 rounded-xl bg-muted px-3 py-3 text-xs text-muted-foreground">
+            <div className="mt-4 rounded-xl bg-muted px-3 py-3 text-xs text-muted-foreground">
               A time-coded client ID is generated automatically when this order is recorded.
             </div>
             <label className="mt-3 block text-sm font-semibold">
@@ -350,7 +344,7 @@ function NewOrder() {
             </div>
             <button
               onClick={submit}
-              disabled={saving || items.length === 0 || !customer.trim()}
+              disabled={saving || items.length === 0}
               className="mt-4 h-12 w-full rounded-xl bg-primary text-sm font-bold text-primary-foreground shadow-sm disabled:opacity-50"
             >
               {saving

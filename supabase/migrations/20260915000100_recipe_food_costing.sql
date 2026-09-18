@@ -1,4 +1,4 @@
--- LumiPOS Phase 3: recipes and food costing
+-- TillBook Phase 3: recipes and food costing
 CREATE TABLE IF NOT EXISTS public.recipes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   menu_item_id UUID NOT NULL UNIQUE REFERENCES public.menu_items(id) ON DELETE CASCADE,

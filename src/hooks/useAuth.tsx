@@ -41,23 +41,45 @@ export function useAuth() {
   const [trialLoading, setTrialLoading] = useState(true);
   const [accountDataLoading, setAccountDataLoading] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      setSession(newSession);
-      setUser(newSession?.user ?? null);
-      setAccountDataLoading(Boolean(newSession?.user));
-      setLoading(false);
-    });
+    let active = true;
+    let unsubscribe = () => {};
 
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
-      setAccountDataLoading(Boolean(data.session?.user));
+    const finishLoading = (nextSession: Session | null) => {
+      if (!active) return;
+      setAuthError(null);
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+      setAccountDataLoading(Boolean(nextSession?.user));
       setLoading(false);
-    });
+    };
 
-    return () => sub.subscription.unsubscribe();
+    try {
+      const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+        finishLoading(newSession);
+      });
+      unsubscribe = () => sub.subscription.unsubscribe();
+
+      void supabase.auth.getSession().then(({ data, error }) => {
+        if (error) console.error("Unable to restore authentication session:", error);
+        finishLoading(data.session);
+      }).catch((error) => {
+        console.error("Unable to initialize authentication:", error);
+        finishLoading(null);
+        if (active) setAuthError("Unable to connect to authentication. Check the deployed Supabase configuration.");
+      });
+    } catch (error) {
+      console.error("Unable to initialize Supabase authentication:", error);
+      finishLoading(null);
+      if (active) setAuthError("Unable to connect to authentication. Check the deployed Supabase configuration.");
+    }
+
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -152,5 +174,6 @@ export function useAuth() {
     isManager: role === "manager", isApproved: role === "manager" || role === "staff",
     needsHotelSetup: Boolean(user && !hasHotelMembership), displayName,
     loading: loading || accountDataLoading || trialLoading,
+    authError,
   };
 }

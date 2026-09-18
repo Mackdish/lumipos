@@ -1,4 +1,4 @@
--- LumiPOS menu images.
+-- TillBook menu images.
 -- Managers upload menu photos; cashiers can read them through a public bucket.
 
 ALTER TABLE public.menu_items

@@ -1,6 +1,6 @@
-# LumiPOS
+# TillBook
 
-LumiPOS is a web-based hotel and restaurant point-of-sale system for recording food orders, managing the menu, tracking payments, and reviewing daily sales activity.
+TillBook is a web-based hotel and restaurant point-of-sale system for recording food orders, managing the menu, tracking payments, and reviewing daily sales activity.
 
 The application is built with React, TypeScript, TanStack Start, TanStack Router, TanStack Query, Vite, Nitro, Tailwind CSS, and Supabase.
 
@@ -128,7 +128,6 @@ Stores the main order record.
 - `payment_method`
 - `payment_status`
 - `order_status`
-- `kitchen_status`
 - `total`
 - `notes`
 - `approved_at`
@@ -321,7 +320,7 @@ Mutations invalidate the relevant query so changes become visible without requir
 
 ## Deployment
 
-LumiPOS is built as a TanStack Start application using Vite and Nitro. The deployment target can be selected independently of the application routes and business logic.
+TillBook is built as a TanStack Start application using Vite and Nitro. The deployment target can be selected independently of the application routes and business logic.
 
 For Cloudflare Workers, the current TanStack Start documentation recommends the Cloudflare Vite plugin and Wrangler configuration. See the official TanStack Start hosting documentation for the target-specific setup.
 
@@ -361,4 +360,4 @@ Check the browser console and Supabase logs. Then verify that the relevant table
 
 ## Ownership and Maintenance
 
-LumiPOS is maintained as an independent application codebase. The repository is the source of truth for application code, configuration, and technical documentation.
+TillBook is maintained as an independent application codebase. The repository is the source of truth for application code, configuration, and technical documentation.

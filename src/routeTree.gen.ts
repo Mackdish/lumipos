@@ -13,7 +13,6 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DailySummaryRouteImport } from './routes/daily-summary'
 import { Route as InventoryRouteImport } from './routes/inventory'
-import { Route as KitchenRouteImport } from './routes/kitchen'
 import { Route as MenuRouteImport } from './routes/menu'
 import { Route as NewOrderRouteImport } from './routes/new-order'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
@@ -42,11 +41,6 @@ const DailySummaryRoute = DailySummaryRouteImport.update({
 const InventoryRoute = InventoryRouteImport.update({
   id: '/inventory',
   path: '/inventory',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const KitchenRoute = KitchenRouteImport.update({
-  id: '/kitchen',
-  path: '/kitchen',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MenuRoute = MenuRouteImport.update({
@@ -100,7 +94,6 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/daily-summary': typeof DailySummaryRoute
   '/inventory': typeof InventoryRoute
-  '/kitchen': typeof KitchenRoute
   '/menu': typeof MenuRoute
   '/new-order': typeof NewOrderRoute
   '/onboarding': typeof OnboardingRoute
@@ -116,7 +109,6 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/daily-summary': typeof DailySummaryRoute
   '/inventory': typeof InventoryRoute
-  '/kitchen': typeof KitchenRoute
   '/menu': typeof MenuRoute
   '/new-order': typeof NewOrderRoute
   '/onboarding': typeof OnboardingRoute
@@ -133,7 +125,6 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/daily-summary': typeof DailySummaryRoute
   '/inventory': typeof InventoryRoute
-  '/kitchen': typeof KitchenRoute
   '/menu': typeof MenuRoute
   '/new-order': typeof NewOrderRoute
   '/onboarding': typeof OnboardingRoute
@@ -151,7 +142,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/daily-summary'
     | '/inventory'
-    | '/kitchen'
     | '/menu'
     | '/new-order'
     | '/onboarding'
@@ -167,7 +157,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/daily-summary'
     | '/inventory'
-    | '/kitchen'
     | '/menu'
     | '/new-order'
     | '/onboarding'
@@ -183,7 +172,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/daily-summary'
     | '/inventory'
-    | '/kitchen'
     | '/menu'
     | '/new-order'
     | '/onboarding'
@@ -200,7 +188,6 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   DailySummaryRoute: typeof DailySummaryRoute
   InventoryRoute: typeof InventoryRoute
-  KitchenRoute: typeof KitchenRoute
   MenuRoute: typeof MenuRoute
   NewOrderRoute: typeof NewOrderRoute
   OnboardingRoute: typeof OnboardingRoute
@@ -239,13 +226,6 @@ declare module '@tanstack/react-router' {
       path: '/inventory'
       fullPath: '/inventory'
       preLoaderRoute: typeof InventoryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/kitchen': {
-      id: '/kitchen'
-      path: '/kitchen'
-      fullPath: '/kitchen'
-      preLoaderRoute: typeof KitchenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/menu': {
@@ -331,7 +311,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   DailySummaryRoute: DailySummaryRoute,
   InventoryRoute: InventoryRoute,
-  KitchenRoute: KitchenRoute,
   MenuRoute: MenuRoute,
   NewOrderRoute: NewOrderRoute,
   OnboardingRoute: OnboardingRoute,

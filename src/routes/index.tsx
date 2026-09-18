@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { formatMoney, formatTime, isToday, orderCode, type Order } from "@/lib/pos";
 
 export const Route = createFileRoute("/")({
-  head: () => ({ meta: [{ title: "Dashboard | LumiPOS" }, { name: "description", content: "Daily restaurant sales, orders and payment overview." }] }),
+  head: () => ({ meta: [{ title: "Dashboard | TillBook" }, { name: "description", content: "Daily restaurant sales, orders and payment overview." }] }),
   component: Dashboard,
 });
 

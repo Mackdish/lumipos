@@ -9,7 +9,7 @@ import { formatMoney } from "@/lib/pos";
 export const Route = createFileRoute("/shifts")({
   head: () => ({
     meta: [
-      { title: "Staff shifts | LumiPOS" },
+      { title: "Staff shifts | TillBook" },
       { name: "description", content: "Start, close and review staff shifts." },
     ],
   }),

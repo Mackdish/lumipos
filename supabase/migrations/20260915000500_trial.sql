@@ -1,4 +1,4 @@
--- LumiPOS: 7-day free trial for the current restaurant account.
+-- TillBook: 7-day free trial for the current restaurant account.
 -- The database project represents one restaurant account, so the trial is stored
 -- as a singleton and is shared by the manager and approved cashiers.
 

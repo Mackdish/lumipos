@@ -1,4 +1,4 @@
--- Staff shift management for LumiPOS.
+-- Staff shift management for TillBook.
 -- One open shift per staff member; managers can review all shifts.
 
 CREATE TABLE IF NOT EXISTS public.staff_shifts (

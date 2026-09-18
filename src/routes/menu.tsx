@@ -10,10 +10,10 @@ import { formatMoney, type MenuItem } from "@/lib/pos";
 export const Route = createFileRoute("/menu")({
   head: () => ({
     meta: [
-      { title: "Menu management | LumiPOS" },
-      { name: "description", content: "Manage dishes, prices, images, categories and availability in LumiPOS." },
-      { property: "og:title", content: "Menu management | LumiPOS" },
-      { property: "og:description", content: "Manage dishes, prices, images, categories and availability in LumiPOS." },
+      { title: "Menu management | TillBook" },
+      { name: "description", content: "Manage dishes, prices, images, categories and availability in TillBook." },
+      { property: "og:title", content: "Menu management | TillBook" },
+      { property: "og:description", content: "Manage dishes, prices, images, categories and availability in TillBook." },
     ],
   }),
   component: MenuManagement,

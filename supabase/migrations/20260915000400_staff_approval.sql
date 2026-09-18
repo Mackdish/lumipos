@@ -1,4 +1,4 @@
--- Staff self-registration and manager approval workflow for LumiPOS.
+-- Staff self-registration and manager approval workflow for TillBook.
 -- New non-manager accounts are created without a user_roles row until approved.
 
 ALTER TABLE public.profiles

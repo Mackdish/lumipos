@@ -6,7 +6,7 @@ import { formatMoney, formatTime, orderCode, type Order } from "@/lib/pos";
 export const Route = createFileRoute("/orders/$id/receipt")({
   head: () => ({
     meta: [
-      { title: "Receipt | LumiPOS" },
+      { title: "Receipt | TillBook" },
       { name: "description", content: "Printable restaurant receipt." },
     ],
   }),
@@ -55,8 +55,8 @@ function ReceiptPage() {
 
       <main className="receipt-page mx-auto w-full max-w-[80mm] bg-white px-3 pb-8 pt-2 text-black sm:px-4">
         <header className="text-center">
-          <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-black text-sm font-black text-white">LP</div>
-          <h1 className="mt-2 text-xl font-black tracking-tight">LumiPOS</h1>
+          <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-black text-sm font-black text-white">TB</div>
+          <h1 className="mt-2 text-xl font-black tracking-tight">TillBook</h1>
           <p className="text-[11px] font-semibold uppercase tracking-[.16em] text-black/60">Restaurant receipt</p>
         </header>
 
@@ -104,7 +104,7 @@ function ReceiptPage() {
 
         <footer className="mt-6 text-center text-[10px] leading-4 text-black/60">
           <p>Thank you for your order.</p>
-          <p className="mt-1">Powered by LumiPOS</p>
+          <p className="mt-1">Powered by TillBook</p>
         </footer>
       </main>
 

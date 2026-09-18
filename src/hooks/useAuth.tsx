@@ -50,12 +50,26 @@ function useAuthState() {
       setLoading(false);
     });
 
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
-      setAccountDataLoading(Boolean(data.session?.user));
-      setLoading(false);
-    });
+    Promise.race([
+      supabase.auth.getSession(),
+      new Promise<never>((_, reject) =>
+        window.setTimeout(() => reject(new Error("Supabase session check timed out")), 8000),
+      ),
+    ])
+      .then(({ data }) => {
+        setSession(data.session);
+        setUser(data.session?.user ?? null);
+        setAccountDataLoading(Boolean(data.session?.user));
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Unable to restore Supabase session:", error);
+        setSession(null);
+        setUser(null);
+        setAccountDataLoading(false);
+        setTrialLoading(false);
+        setLoading(false);
+      });
 
     return () => sub.subscription.unsubscribe();
   }, []);
@@ -78,13 +92,18 @@ function useAuthState() {
 
     const initializeAccount = async () => {
       try {
-        const [profileResult, membershipResult] = await Promise.all([
+        const [profileResult, membershipResult] = await Promise.race([
+          Promise.all([
           supabase
             .from("profiles")
             .select("id, full_name, job_title, email, approval_status")
             .eq("id", user.id)
             .maybeSingle(),
           (supabase as any).rpc("get_my_hotel_membership"),
+          ]),
+          new Promise<never>((_, reject) =>
+            window.setTimeout(() => reject(new Error("Supabase account data request timed out")), 8000),
+          ),
         ]);
 
         if (!active) return;

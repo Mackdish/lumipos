@@ -13,8 +13,8 @@ type Report = {
   cash_sales: number;
   mpesa_sales: number;
   other_sales: number;
-  by_staff: { name: string; count: number; total: number }[];
-  by_dish: { name: string; quantity: number; total: number }[];
+  sales_by_staff: { staff_id: string | null; staff_name: string; order_count: number; total_sales: number }[];
+  sales_by_dish: { menu_item_id: string | null; dish_name: string; quantity: number; total_sales: number }[];
 };
 
 function todayInKenya() {
@@ -62,9 +62,7 @@ function DailySummary() {
   async function generateReport() {
     setBusy("report");
     setMessage(null);
-    const { data, error } = await (supabase as any).rpc("generate_daily_report", {
-      p_business_date: businessDate,
-    });
+    const { data, error } = await (supabase as any).rpc("generate_daily_report");
     setBusy(null);
     if (error) {
       setMessage(error.message);
@@ -86,9 +84,7 @@ function DailySummary() {
 
     setBusy("clear");
     setMessage(null);
-    const { data, error } = await (supabase as any).rpc("clear_daily_session", {
-      p_business_date: businessDate,
-    });
+    const { data, error } = await (supabase as any).rpc("clear_daily_session");
     setBusy(null);
     if (error) {
       setMessage(error.message);
@@ -155,12 +151,12 @@ function DailySummary() {
             <section className="mt-5 rounded-2xl border border-border bg-card">
               <h2 className="border-b border-border p-4 text-sm font-bold uppercase tracking-wider text-muted-foreground">Sales by cashier / staff</h2>
               <ul className="divide-y divide-border">
-                {activeReport.by_staff.length === 0 ? (
+                {activeReport.sales_by_staff.length === 0 ? (
                   <li className="p-4 text-sm text-muted-foreground">No sales recorded.</li>
-                ) : activeReport.by_staff.map((item) => (
-                  <li key={item.name} className="flex justify-between gap-3 p-4">
-                    <span>{item.name} · {item.count} orders</span>
-                    <span className="font-bold">{formatMoney(Number(item.total))}</span>
+                ) : activeReport.sales_by_staff.map((item) => (
+                  <li key={item.staff_id ?? item.staff_name} className="flex justify-between gap-3 p-4">
+                    <span>{item.staff_name} · {item.order_count} orders</span>
+                    <span className="font-bold">{formatMoney(Number(item.total_sales))}</span>
                   </li>
                 ))}
               </ul>
@@ -169,12 +165,12 @@ function DailySummary() {
             <section className="mt-5 rounded-2xl border border-border bg-card">
               <h2 className="border-b border-border p-4 text-sm font-bold uppercase tracking-wider text-muted-foreground">Sales by dish</h2>
               <ul className="divide-y divide-border">
-                {activeReport.by_dish.length === 0 ? (
+                {activeReport.sales_by_dish.length === 0 ? (
                   <li className="p-4 text-sm text-muted-foreground">No dishes sold.</li>
-                ) : activeReport.by_dish.map((item) => (
-                  <li key={item.name} className="flex justify-between gap-3 p-4">
-                    <span>{item.quantity} × {item.name}</span>
-                    <span className="font-bold">{formatMoney(Number(item.total))}</span>
+                ) : activeReport.sales_by_dish.map((item) => (
+                  <li key={item.menu_item_id ?? item.dish_name} className="flex justify-between gap-3 p-4">
+                    <span>{item.quantity} × {item.dish_name}</span>
+                    <span className="font-bold">{formatMoney(Number(item.total_sales))}</span>
                   </li>
                 ))}
               </ul>

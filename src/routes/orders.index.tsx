@@ -21,7 +21,7 @@ export const Route = createFileRoute("/orders/")({
   }),
   component: OrdersPage,
 });
-const filters = ["All", "PAID", "PENDING", "OPEN", "PREPARING", "READY"] as const;
+const filters = ["All", "PAID", "PENDING"] as const;
 function OrdersPage() {
   const [filter, setFilter] = useState<(typeof filters)[number]>("All");
   const [search, setSearch] = useState("");
@@ -55,7 +55,7 @@ function OrdersPage() {
     return orders.filter((o) => {
       const inWindow = includeOlder || isWithinOrderWindow(o.created_at, now);
       const matchesFilter =
-        filter === "All" || o.payment_status === filter || o.kitchen_status === filter;
+        filter === "All" || o.payment_status === filter;
       return (
         inWindow &&
         matchesFilter &&
@@ -128,7 +128,7 @@ function OrdersPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search customer, staff or order number"
+            placeholder="Search client ID, staff or order number"
             aria-label="Search orders"
             className="h-12 w-full rounded-xl border border-border bg-card px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30"
           />
@@ -245,7 +245,6 @@ function OrdersPage() {
                   >
                     {order.payment_status}
                   </span>
-                  <span className="rounded-full bg-muted px-2.5 py-1 text-[10px] font-bold uppercase text-muted-foreground">{order.kitchen_status}</span>
                 </div>
               </Link>
             ))}

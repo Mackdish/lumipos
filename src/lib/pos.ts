@@ -23,7 +23,6 @@ export type Order = {
   order_number: number;
   customer: string;
   table_number: string | null;
-  kitchen_status: string;
   employee_id: string | null;
   employee_name: string;
   payment_method: string;

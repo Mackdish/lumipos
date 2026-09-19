@@ -10,8 +10,8 @@ export const Route = createFileRoute("/")({
   component: Dashboard,
 });
 
-function Metric({ label, value, hint }: { label: string; value: string; hint?: string }) {
-  return <div className="rounded-2xl border border-border bg-card p-5 shadow-sm"><p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{label}</p><p className="mt-3 text-2xl font-bold tracking-tight">{value}</p>{hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}</div>;
+function Metric({ icon, label, value, hint }: { icon: string; label: string; value: string; hint?: string }) {
+  return <div className="rounded-[22px] border border-border bg-card p-4 shadow-[0_8px_18px_rgba(15,93,76,0.04)]"><div className="mb-3 flex items-center justify-between"><span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/8 text-lg text-primary">{icon}</span>{hint ? <span className="text-[10px] font-bold text-muted-foreground">→</span> : null}</div><p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">{label}</p><p className="mt-2 text-2xl font-black tracking-tight text-foreground">{value}</p></div>;
 }
 
 function Dashboard() {
@@ -20,20 +20,74 @@ function Dashboard() {
     queryKey: ["orders"], staleTime: 30 * 1000, gcTime: 10 * 60 * 1000, refetchOnWindowFocus: false,
     queryFn: async () => { const { data, error } = await supabase.from("orders").select("*, order_items(id, name, quantity, price)").order("created_at", { ascending: false }); if (error) throw error; return data as unknown as Order[]; },
   });
-  const { data: pendingStaff = [] } = useQuery({
-    queryKey: ["pending-staff-count"], enabled: isManager, staleTime: 30 * 1000, gcTime: 10 * 60 * 1000, refetchOnWindowFocus: false,
-    queryFn: async () => { const { data, error } = await (supabase as any).from("profiles").select("id, full_name, email, created_at").eq("approval_status", "pending").order("created_at", { ascending: false }); if (error) throw error; return data ?? []; },
-  });
   const today = orders.filter((o) => isToday(o.created_at));
-  const total = today.reduce((sum, o) => sum + Number(o.total), 0);
-  const cash = today.filter((o) => o.payment_method === "Cash").reduce((sum, o) => sum + Number(o.total), 0);
-  const mpesa = today.filter((o) => o.payment_method === "M-Pesa").reduce((sum, o) => sum + Number(o.total), 0);
-  const pending = today.filter((o) => o.payment_status === "PENDING").length;
-  const open = today.filter((o) => o.order_status === "OPEN").length;
-  return <AppShell><main className="mx-auto max-w-7xl px-4 pb-28 pt-5 sm:px-8 sm:py-8 lg:px-10 lg:pb-10">
-    <section className="rounded-3xl border border-border bg-card p-5 shadow-sm sm:p-7"><div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-xs font-bold uppercase tracking-[.18em] text-primary">Today's overview</p><h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">Welcome back, {displayName.split(" ")[0]}</h1><p className="mt-2 text-sm text-muted-foreground">Monitor sales and get the next order moving quickly.</p></div><Link to="/new-order" className="inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground shadow-sm transition hover:bg-primary/90">+ New order</Link></div></section>
-    {isManager && pendingStaff.length > 0 && <section className="mt-5 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 shadow-sm sm:p-5"><div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-black uppercase tracking-wider text-amber-700">Action required</p><h2 className="mt-1 text-lg font-bold">{pendingStaff.length} cashier registration{pendingStaff.length === 1 ? "" : "s"} awaiting approval</h2><p className="mt-1 text-sm text-muted-foreground">Review new staff accounts before they can access the POS.</p></div><Link to="/user-management" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground">Open user management →</Link></div><div className="mt-4 flex flex-wrap gap-2">{pendingStaff.slice(0, 3).map((staff: { id: string; full_name: string; email: string | null }) => <span key={staff.id} className="rounded-full bg-background px-3 py-1.5 text-xs font-semibold">{staff.full_name} · {staff.email}</span>)}{pendingStaff.length > 3 && <span className="rounded-full bg-background px-3 py-1.5 text-xs font-semibold">+{pendingStaff.length - 3} more</span>}</div></section>}
-    <section className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5"><Metric label="Orders" value={String(today.length)} /><Metric label="Sales" value={formatMoney(total)} /><Metric label="Cash" value={formatMoney(cash)} /><Metric label="M-Pesa" value={formatMoney(mpesa)} /><Metric label="Open / pending" value={`${open} / ${pending}`} hint="Orders / payments" /></section>
-    <section className="mt-5 overflow-hidden rounded-2xl border border-border bg-card shadow-sm"><div className="flex items-center justify-between gap-4 border-b border-border p-5"><div><h2 className="text-lg font-bold">Recent orders</h2><p className="mt-1 text-xs text-muted-foreground">Latest activity across the POS.</p></div><Link to="/orders" className="rounded-lg px-3 py-2 text-sm font-bold text-primary hover:bg-muted">View all</Link></div>{isLoading ? <div className="space-y-3 p-5"><div className="h-12 animate-pulse rounded-xl bg-muted" /><div className="h-12 animate-pulse rounded-xl bg-muted" /><div className="h-12 animate-pulse rounded-xl bg-muted" /></div> : isError ? <p className="p-5 text-sm text-destructive">Unable to load recent orders. Check the connection and try again.</p> : orders.length === 0 ? <div className="p-8 text-center"><p className="font-semibold">No orders yet</p><p className="mt-1 text-sm text-muted-foreground">Create your first order to start tracking sales.</p><Link to="/new-order" className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground">Create order</Link></div> : <ul className="divide-y divide-border">{orders.slice(0, 8).map((order) => <li key={order.id}><Link to="/orders/$id" params={{ id: order.id }} className="flex min-h-16 items-center justify-between gap-4 p-4 transition hover:bg-muted sm:p-5"><div className="min-w-0"><p className="truncate text-sm font-bold sm:text-base">{orderCode(order)} · {order.customer}</p><p className="mt-1 truncate text-xs text-muted-foreground sm:text-sm">{order.employee_name} · {formatTime(order.created_at)} · {order.payment_method}</p></div><div className="shrink-0 text-right"><p className="text-sm font-bold sm:text-base">{formatMoney(Number(order.total))}</p><p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{order.payment_status}</p></div></Link></li>)}</ul>}</section>
+  const totalSales = today.reduce((sum, o) => sum + Number(o.total), 0);
+  const allSales = orders.reduce((sum, o) => sum + Number(o.total), 0);
+  const paidOrders = today.filter((o) => o.payment_status === "PAID").length;
+  const greeting = new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 18 ? "Good afternoon" : "Good evening";
+  const summaryCards = [
+    { label: "New Orders", value: String(today.length), icon: "◫", hint: true },
+    { label: "Paid Orders", value: String(paidOrders), icon: "✓", hint: true },
+    { label: "Today's Sales", value: formatMoney(totalSales), icon: "₵", hint: true },
+    { label: "Total Sales", value: formatMoney(allSales), icon: "₵", hint: true },
+  ];
+
+  return <AppShell><main className="mx-auto max-w-7xl px-3 pb-28 pt-3 sm:px-6 sm:pt-6 lg:px-10 lg:pb-10">
+    <section className="rounded-[28px] border border-border bg-card p-4 shadow-[0_10px_24px_rgba(15,93,76,0.07)] sm:p-6">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Today</p>
+          <h1 className="mt-2 text-[2rem] font-black tracking-[-0.05em] text-foreground sm:text-[2.4rem]">{greeting}, {displayName.split(" ")[0]}</h1>
+          <p className="mt-2 text-sm text-muted-foreground">Here’s what’s happening today</p>
+        </div>
+        <Link to="/new-order" className="inline-flex h-11 items-center justify-center rounded-2xl bg-primary px-4 text-sm font-bold text-primary-foreground shadow-sm shadow-primary/20">+ New Order</Link>
+      </div>
+    </section>
+
+    <section className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {summaryCards.map((card) => <Metric key={card.label} icon={card.icon} label={card.label} value={card.value} hint={card.hint ? "" : undefined} />)}
+    </section>
+
+    <section className="mt-5 rounded-[26px] border border-border bg-card p-3 shadow-[0_10px_24px_rgba(15,93,76,0.04)] sm:p-4">
+      <div className="mb-3 flex items-center justify-between gap-3 px-1">
+        <h2 className="text-lg font-black text-foreground">Recent Orders</h2>
+        <Link to="/orders" className="text-sm font-bold text-primary">View all</Link>
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-3">
+          {[1, 2, 3].map((item) => <div key={item} className="h-16 animate-pulse rounded-2xl bg-muted" />)}
+        </div>
+      ) : isError ? (
+        <p className="rounded-2xl bg-destructive/5 p-4 text-sm text-destructive">Unable to load recent orders.</p>
+      ) : orders.length === 0 ? (
+        <div className="rounded-[22px] border border-dashed border-border bg-muted/30 p-8 text-center">
+          <p className="text-xl font-black text-foreground">No orders yet</p>
+          <p className="mt-2 text-sm text-muted-foreground">Orders entered today will appear here.</p>
+          <Link to="/new-order" className="mt-5 inline-flex h-11 items-center justify-center rounded-2xl bg-primary px-5 text-sm font-bold text-primary-foreground">+ New Order</Link>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {orders.slice(0, 6).map((order) => {
+            const items = (order.order_items ?? []).slice(0, 2).map((item) => item.name).join(", ");
+            return <Link key={order.id} to="/orders/$id" params={{ id: order.id }} className="flex items-center justify-between gap-3 rounded-[20px] border border-border bg-background p-3.5 transition hover:bg-muted">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-black text-foreground">#{order.order_number || order.id.slice(0, 4).toUpperCase()}</p>
+                <p className="mt-1 truncate text-xs text-muted-foreground">{items || "Order"}</p>
+              </div>
+              <div className="shrink-0 text-right">
+                <p className="text-sm font-black text-foreground">{formatMoney(Number(order.total))}</p>
+                <div className="mt-1 flex items-center gap-2">
+                  <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-emerald-700">PAID</span>
+                  <span className="text-[11px] font-medium text-muted-foreground">{formatTime(order.created_at)}</span>
+                </div>
+              </div>
+            </Link>;
+          })}
+        </div>
+      )}
+    </section>
+
+    <Link to="/new-order" className="fixed bottom-5 right-5 z-30 inline-flex h-14 w-14 items-center justify-center rounded-full bg-primary text-3xl font-light text-primary-foreground shadow-[0_16px_30px_rgba(15,93,76,0.28)] transition hover:scale-[1.02] sm:h-16 sm:w-16">+</Link>
   </main></AppShell>;
 }

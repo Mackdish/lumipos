@@ -21,7 +21,7 @@ export const Route = createFileRoute("/orders/")({
   }),
   component: OrdersPage,
 });
-const filters = ["All", "PAID", "PENDING"] as const;
+const filters = ["All", "PAID"] as const;
 function OrdersPage() {
   const [filter, setFilter] = useState<(typeof filters)[number]>("All");
   const [search, setSearch] = useState("");
@@ -117,10 +117,10 @@ function OrdersPage() {
           </div>
           <div className="rounded-2xl border border-border bg-card p-4">
             <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              Pending
+              Paid orders
             </p>
             <p className="mt-1 text-xl font-black">
-              {visible.filter((o) => o.payment_status === "PENDING").length}
+              {visible.filter((o) => o.payment_status === "PAID").length}
             </p>
           </div>
         </div>

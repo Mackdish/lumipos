@@ -93,7 +93,7 @@ function NewOrder() {
     return `CL-${timestamp}-${suffix}`;
   }
 
-  async function submit() {
+  async function submit(paymentStatus: "PAID" | "PENDING" = paymentMethod === "Cash" ? "PAID" : "PAID") {
     if (items.length === 0) return toast.error("Add at least one menu item");
     setSaving(true);
     const clientId = generateClientId();
@@ -104,7 +104,7 @@ function NewOrder() {
         employee_id: user?.id ?? null,
         employee_name: displayName,
         payment_method: paymentMethod,
-        payment_status: paymentMethod === "Cash" ? "PAID" : "PENDING",
+        payment_status: paymentStatus,
         order_status: "OPEN",
         total,
         notes: notes.trim() || null,
@@ -133,7 +133,7 @@ function NewOrder() {
     }
     void queryClient.invalidateQueries({ queryKey: ["orders"] });
     toast.success(
-      `${paymentMethod === "Cash" ? "Order saved" : "Order awaiting approval"} · ${clientId}`,
+      paymentStatus === "PAID" ? `Order saved · ${clientId}` : `Order marked pending · ${clientId}`,
     );
     setLines({});
     setNotes("");
@@ -142,14 +142,14 @@ function NewOrder() {
   return (
     <AppShell>
       <main className="mx-auto max-w-7xl px-4 pb-28 pt-5 sm:px-8 sm:py-8 lg:px-10 lg:pb-10">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3 rounded-[28px] border border-primary/10 bg-gradient-to-r from-primary via-primary to-[#1b7a5c] p-4 text-primary-foreground shadow-[0_18px_40px_rgba(15,93,76,0.18)] sm:p-5">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[.18em] text-primary">
+            <p className="text-[10px] font-black uppercase tracking-[.22em] text-primary-foreground/85">
               Point of sale
             </p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">New order</h1>
+            <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">New order</h1>
           </div>
-          <div className="rounded-xl bg-muted px-3 py-2 text-xs font-bold sm:hidden">
+          <div className="rounded-full border border-white/20 bg-white/10 px-3 py-2 text-xs font-bold backdrop-blur-sm sm:hidden">
             {itemCount} items
           </div>
         </div>
@@ -342,19 +342,32 @@ function NewOrder() {
               <span className="font-bold">Total</span>
               <span className="text-xl font-black">{formatMoney(total)}</span>
             </div>
-            <button
-              onClick={submit}
-              disabled={saving || items.length === 0}
-              className="mt-4 h-12 w-full rounded-xl bg-primary text-sm font-bold text-primary-foreground shadow-sm disabled:opacity-50"
-            >
-              {saving
-                ? paymentMethod === "Cash"
-                  ? "Saving order..."
-                  : "Approving order..."
-                : paymentMethod === "Cash"
-                  ? "Save Order"
-                  : "Approve Order"}
-            </button>
+            {paymentMethod === "Cash" ? (
+              <button
+                onClick={() => submit("PAID")}
+                disabled={saving || items.length === 0}
+                className="mt-4 h-12 w-full rounded-xl bg-primary text-sm font-bold text-primary-foreground shadow-sm disabled:opacity-50"
+              >
+                {saving ? "Saving order..." : "Save Order"}
+              </button>
+            ) : (
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                <button
+                  onClick={() => submit("PAID")}
+                  disabled={saving || items.length === 0}
+                  className="h-12 rounded-xl bg-primary text-sm font-bold text-primary-foreground shadow-sm disabled:opacity-50"
+                >
+                  {saving ? "Approving..." : "Approve Order"}
+                </button>
+                <button
+                  onClick={() => submit("PENDING")}
+                  disabled={saving || items.length === 0}
+                  className="h-12 rounded-xl border border-border bg-background text-sm font-bold text-foreground shadow-sm disabled:opacity-50"
+                >
+                  {saving ? "Saving..." : "Pending"}
+                </button>
+              </div>
+            )}
           </aside>
         </div>
       </main>

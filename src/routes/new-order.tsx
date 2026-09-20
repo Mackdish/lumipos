@@ -21,7 +21,7 @@ export const Route = createFileRoute("/new-order")({
 function NewOrder() {
   const queryClient = useQueryClient();
   const { user, displayName } = useAuth();
-  const [paymentMethod, setPaymentMethod] = useState("Cash");
+  const [paymentMethod, setPaymentMethod] = useState("M-pesa");
   const [notes, setNotes] = useState("");
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");

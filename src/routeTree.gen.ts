@@ -12,11 +12,15 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DailySummaryRouteImport } from './routes/daily-summary'
+import { Route as ExpensesRouteImport } from './routes/expenses'
 import { Route as InventoryRouteImport } from './routes/inventory'
 import { Route as MenuRouteImport } from './routes/menu'
 import { Route as NewOrderRouteImport } from './routes/new-order'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as PaymentsRouteImport } from './routes/payments'
 import { Route as RecipesRouteImport } from './routes/recipes'
+import { Route as RefundsRouteImport } from './routes/refunds'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ShiftsRouteImport } from './routes/shifts'
 import { Route as UserManagementRouteImport } from './routes/user-management'
 import { Route as OrdersIndexRouteImport } from './routes/orders.index'
@@ -36,6 +40,11 @@ const AuthRoute = AuthRouteImport.update({
 const DailySummaryRoute = DailySummaryRouteImport.update({
   id: '/daily-summary',
   path: '/daily-summary',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExpensesRoute = ExpensesRouteImport.update({
+  id: '/expenses',
+  path: '/expenses',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InventoryRoute = InventoryRouteImport.update({
@@ -58,9 +67,24 @@ const OnboardingRoute = OnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PaymentsRoute = PaymentsRouteImport.update({
+  id: '/payments',
+  path: '/payments',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RecipesRoute = RecipesRouteImport.update({
   id: '/recipes',
   path: '/recipes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RefundsRoute = RefundsRouteImport.update({
+  id: '/refunds',
+  path: '/refunds',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ShiftsRoute = ShiftsRouteImport.update({
@@ -93,11 +117,15 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/daily-summary': typeof DailySummaryRoute
+  '/expenses': typeof ExpensesRoute
   '/inventory': typeof InventoryRoute
   '/menu': typeof MenuRoute
   '/new-order': typeof NewOrderRoute
   '/onboarding': typeof OnboardingRoute
+  '/payments': typeof PaymentsRoute
   '/recipes': typeof RecipesRoute
+  '/refunds': typeof RefundsRoute
+  '/settings': typeof SettingsRoute
   '/shifts': typeof ShiftsRoute
   '/user-management': typeof UserManagementRoute
   '/orders/$id': typeof OrdersIdRouteWithChildren
@@ -108,11 +136,15 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/daily-summary': typeof DailySummaryRoute
+  '/expenses': typeof ExpensesRoute
   '/inventory': typeof InventoryRoute
   '/menu': typeof MenuRoute
   '/new-order': typeof NewOrderRoute
   '/onboarding': typeof OnboardingRoute
+  '/payments': typeof PaymentsRoute
   '/recipes': typeof RecipesRoute
+  '/refunds': typeof RefundsRoute
+  '/settings': typeof SettingsRoute
   '/shifts': typeof ShiftsRoute
   '/user-management': typeof UserManagementRoute
   '/orders/$id': typeof OrdersIdRouteWithChildren
@@ -124,11 +156,15 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/daily-summary': typeof DailySummaryRoute
+  '/expenses': typeof ExpensesRoute
   '/inventory': typeof InventoryRoute
   '/menu': typeof MenuRoute
   '/new-order': typeof NewOrderRoute
   '/onboarding': typeof OnboardingRoute
+  '/payments': typeof PaymentsRoute
   '/recipes': typeof RecipesRoute
+  '/refunds': typeof RefundsRoute
+  '/settings': typeof SettingsRoute
   '/shifts': typeof ShiftsRoute
   '/user-management': typeof UserManagementRoute
   '/orders/$id': typeof OrdersIdRouteWithChildren
@@ -141,11 +177,15 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/daily-summary'
+    | '/expenses'
     | '/inventory'
     | '/menu'
     | '/new-order'
     | '/onboarding'
+    | '/payments'
     | '/recipes'
+    | '/refunds'
+    | '/settings'
     | '/shifts'
     | '/user-management'
     | '/orders/$id'
@@ -156,11 +196,15 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/daily-summary'
+    | '/expenses'
     | '/inventory'
     | '/menu'
     | '/new-order'
     | '/onboarding'
+    | '/payments'
     | '/recipes'
+    | '/refunds'
+    | '/settings'
     | '/shifts'
     | '/user-management'
     | '/orders/$id'
@@ -171,11 +215,15 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/daily-summary'
+    | '/expenses'
     | '/inventory'
     | '/menu'
     | '/new-order'
     | '/onboarding'
+    | '/payments'
     | '/recipes'
+    | '/refunds'
+    | '/settings'
     | '/shifts'
     | '/user-management'
     | '/orders/$id'
@@ -187,11 +235,15 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
   DailySummaryRoute: typeof DailySummaryRoute
+  ExpensesRoute: typeof ExpensesRoute
   InventoryRoute: typeof InventoryRoute
   MenuRoute: typeof MenuRoute
   NewOrderRoute: typeof NewOrderRoute
   OnboardingRoute: typeof OnboardingRoute
+  PaymentsRoute: typeof PaymentsRoute
   RecipesRoute: typeof RecipesRoute
+  RefundsRoute: typeof RefundsRoute
+  SettingsRoute: typeof SettingsRoute
   ShiftsRoute: typeof ShiftsRoute
   UserManagementRoute: typeof UserManagementRoute
   OrdersIdRoute: typeof OrdersIdRouteWithChildren
@@ -219,6 +271,13 @@ declare module '@tanstack/react-router' {
       path: '/daily-summary'
       fullPath: '/daily-summary'
       preLoaderRoute: typeof DailySummaryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/expenses': {
+      id: '/expenses'
+      path: '/expenses'
+      fullPath: '/expenses'
+      preLoaderRoute: typeof ExpensesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/inventory': {
@@ -249,11 +308,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/payments': {
+      id: '/payments'
+      path: '/payments'
+      fullPath: '/payments'
+      preLoaderRoute: typeof PaymentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/recipes': {
       id: '/recipes'
       path: '/recipes'
       fullPath: '/recipes'
       preLoaderRoute: typeof RecipesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/refunds': {
+      id: '/refunds'
+      path: '/refunds'
+      fullPath: '/refunds'
+      preLoaderRoute: typeof RefundsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/shifts': {
@@ -310,11 +390,15 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
   DailySummaryRoute: DailySummaryRoute,
+  ExpensesRoute: ExpensesRoute,
   InventoryRoute: InventoryRoute,
   MenuRoute: MenuRoute,
   NewOrderRoute: NewOrderRoute,
   OnboardingRoute: OnboardingRoute,
+  PaymentsRoute: PaymentsRoute,
   RecipesRoute: RecipesRoute,
+  RefundsRoute: RefundsRoute,
+  SettingsRoute: SettingsRoute,
   ShiftsRoute: ShiftsRoute,
   UserManagementRoute: UserManagementRoute,
   OrdersIdRoute: OrdersIdRouteWithChildren,

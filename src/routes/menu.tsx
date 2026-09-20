@@ -70,6 +70,13 @@ function getUploadErrorMessage(error: unknown): string {
   return message;
 }
 
+function storagePathFromUrl(url: string | null): string | null {
+  if (!url) return null;
+  const marker = "/menu-images/";
+  const index = url.indexOf(marker);
+  return index >= 0 ? url.slice(index + marker.length) : null;
+}
+
 function MenuManagement() {
   const { isManager, loading, user } = useAuth();
   const queryClient = useQueryClient();
@@ -82,6 +89,7 @@ function MenuManagement() {
   const [imagePreview, setImagePreview] = useState("");
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
+  const [replacingImageId, setReplacingImageId] = useState<string | null>(null);
 
   const { data: items = [], isLoading, isError, error } = useQuery({
     queryKey: ["menu_items"],
@@ -202,6 +210,41 @@ function MenuManagement() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const replaceImage = useMutation({
+    mutationFn: async ({ item, file }: { item: MenuItem; file: File }) => {
+      if (!user?.id) throw new Error("Your session is not ready. Please sign in again.");
+      const prepared = await prepareImageForUpload(file);
+      if (prepared.file.size > MAX_UPLOAD_SIZE) {
+        throw new Error("Image is still too large after compression. Please choose a smaller photo.");
+      }
+      const path = `${user.id}/${crypto.randomUUID()}.${prepared.extension}`;
+      const { error: uploadError } = await supabase.storage.from("menu-images").upload(path, prepared.file, {
+        cacheControl: "31536000",
+        contentType: prepared.type,
+        upsert: false,
+      });
+      if (uploadError) throw new Error(`Image upload failed: ${getUploadErrorMessage(uploadError)}`);
+
+      const imageUrl = supabase.storage.from("menu-images").getPublicUrl(path).data.publicUrl;
+      const { error: updateError } = await db.from("menu_items").update({ image_url: imageUrl }).eq("id", item.id);
+      if (updateError) {
+        await supabase.storage.from("menu-images").remove([path]);
+        throw updateError;
+      }
+      const oldPath = storagePathFromUrl(item.image_url);
+      if (oldPath) await supabase.storage.from("menu-images").remove([oldPath]);
+    },
+    onSuccess: (_data, variables) => {
+      setReplacingImageId(null);
+      toast.success(`${variables.item.name} image updated.`);
+      refresh();
+    },
+    onError: (e: Error) => {
+      setReplacingImageId(null);
+      toast.error(e.message);
+    },
+  });
+
   const removeItem = useMutation({
     mutationFn: async (id: string) => {
       const { data: item } = await db.from("menu_items").select("image_url").eq("id", id).maybeSingle();
@@ -312,8 +355,26 @@ function MenuManagement() {
                     <input aria-label={`Price for ${item.name}`} defaultValue={String(Number(item.price))} inputMode="decimal" type="number" min="0" step="0.01" onBlur={(e) => { const value = Number(e.target.value); if (!Number.isFinite(value) || value <= 0) { e.target.value = String(Number(item.price)); return; } if (value !== Number(item.price)) { updateItem.mutate({ id: item.id, patch: { price: value } }); toast.success(`${item.name} price updated.`); } }} className="w-28 rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
                   </div>
                   <div className="mt-4 grid grid-cols-2 gap-2">
+                    <label className="inline-flex min-h-10 cursor-pointer items-center justify-center rounded-xl border border-border px-3 py-2 text-xs font-bold transition hover:bg-muted has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60">
+                      {replacingImageId === item.id ? "Uploading…" : item.image_url ? "Change picture" : "Add picture"}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="sr-only"
+                        disabled={replaceImage.isPending}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          e.currentTarget.value = "";
+                          if (!file) return;
+                          if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) return toast.error("Use a JPG, PNG or WebP image.");
+                          if (file.size > MAX_IMAGE_SIZE) return toast.error("Image must be 5 MB or smaller.");
+                          setReplacingImageId(item.id);
+                          replaceImage.mutate({ item, file });
+                        }}
+                      />
+                    </label>
                     <button type="button" disabled={updateItem.isPending} onClick={() => updateItem.mutate({ id: item.id, patch: { is_available: !item.is_available } })} className="min-h-10 rounded-xl border border-border px-3 py-2 text-xs font-bold transition hover:bg-muted disabled:opacity-60">{item.is_available ? "Hide from POS" : "Show on POS"}</button>
-                    <button type="button" disabled={removeItem.isPending} onClick={() => { if (window.confirm(`Remove ${item.name} from the menu?`)) removeItem.mutate(item.id); }} className="min-h-10 rounded-xl px-3 py-2 text-xs font-bold text-destructive transition hover:bg-destructive/10 disabled:opacity-60">Remove</button>
+                    <button type="button" disabled={removeItem.isPending} onClick={() => { if (window.confirm(`Remove ${item.name} from the menu?`)) removeItem.mutate(item.id); }} className="col-span-2 min-h-10 rounded-xl px-3 py-2 text-xs font-bold text-destructive transition hover:bg-destructive/10 disabled:opacity-60">Remove</button>
                   </div>
                 </div>
               </article>

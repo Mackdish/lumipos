@@ -4,9 +4,10 @@ import AppShell from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { formatMoney, formatTime, isToday, orderCode, type Order } from "@/lib/pos";
+import RefundForm from "@/components/ui/refundform";
 
 export const Route = createFileRoute("/")({
-  head: () => ({ meta: [{ title: "Dashboard | LumiPOS" }, { name: "description", content: "Daily restaurant sales, orders and payment overview." }] }),
+  head: () => ({ meta: [{ title: "Dashboard | TillBook" }, { name: "description", content: "Daily restaurant sales, orders and payment overview." }] }),
   component: Dashboard,
 });
 
@@ -15,21 +16,72 @@ function Metric({ icon, label, value, hint }: { icon: string; label: string; val
 }
 
 function Dashboard() {
-  const { displayName, isManager } = useAuth();
+  const { displayName, user } = useAuth();
   const { data: orders = [], isLoading, isError } = useQuery({
     queryKey: ["orders"], staleTime: 30 * 1000, gcTime: 10 * 60 * 1000, refetchOnWindowFocus: false,
     queryFn: async () => { const { data, error } = await supabase.from("orders").select("*, order_items(id, name, quantity, price)").order("created_at", { ascending: false }); if (error) throw error; return data as unknown as Order[]; },
   });
   const today = orders.filter((o) => isToday(o.created_at));
-  const totalSales = today.reduce((sum, o) => sum + Number(o.total), 0);
-  const allSales = orders.reduce((sum, o) => sum + Number(o.total), 0);
-  const paidOrders = today.filter((o) => o.payment_status === "PAID").length;
+  const paidToday = today.filter((o) => o.payment_status === "PAID");
+  const totalSales = paidToday.reduce((sum, o) => sum + Number(o.total), 0);
+  const cashCollected = paidToday
+    .filter((o) => o.payment_method === "Cash")
+    .reduce((sum, o) => sum + Number(o.total), 0);
+  const mpesaCollected = paidToday
+    .filter((o) => o.payment_method.toLowerCase().replace(/[-\s]/g, "") === "mpesa")
+    .reduce((sum, o) => sum + Number(o.total), 0);
+  const paidOrders = paidToday.length;
+  const pendingPayments = orders.filter((o) => o.payment_status === "PENDING");
+  const activeShift = useQuery({
+    queryKey: ["active-shift", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("staff_shifts")
+        .select("id, opening_cash, started_at")
+        .eq("user_id", user!.id)
+        .is("ended_at", null)
+        .maybeSingle();
+      if (error) throw error;
+      return data as { id: string; opening_cash: number; started_at: string } | null;
+    },
+  });
+  const shiftCash = useQuery({
+    queryKey: ["dashboard-shift-cash", activeShift.data?.id],
+    enabled: !!activeShift.data,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("total")
+        .eq("employee_id", user!.id)
+        .eq("payment_method", "Cash")
+        .eq("payment_status", "PAID")
+        .gte("created_at", activeShift.data!.started_at);
+      if (error) throw error;
+      return (data ?? []).reduce((sum, order) => sum + Number(order.total || 0), 0);
+    },
+  });
+  const cashOut = useQuery({
+    queryKey: ["dashboard-cash-out", activeShift.data?.id],
+    enabled: !!activeShift.data,
+    queryFn: async () => {
+      const [expenses, refunds] = await Promise.all([
+        (supabase as any).from("expenses").select("amount").eq("shift_id", activeShift.data!.id).eq("method", "Cash"),
+        (supabase as any).from("refunds").select("amount").eq("shift_id", activeShift.data!.id).eq("method", "Cash"),
+      ]);
+      if (expenses.error) throw expenses.error;
+      if (refunds.error) throw refunds.error;
+      return [...(expenses.data ?? []), ...(refunds.data ?? [])].reduce((sum, row) => sum + Number(row.amount || 0), 0);
+    },
+  });
+  const expectedDrawer = Number(activeShift.data?.opening_cash || 0) + Number(shiftCash.data || 0) - Number(cashOut.data || 0);
   const greeting = new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 18 ? "Good afternoon" : "Good evening";
   const summaryCards = [
-    { label: "New Orders", value: String(today.length), icon: "◫", hint: true },
-    { label: "Paid Orders", value: String(paidOrders), icon: "✓", hint: true },
-    { label: "Today's Sales", value: formatMoney(totalSales), icon: "₵", hint: true },
-    { label: "Total Sales", value: formatMoney(allSales), icon: "₵", hint: true },
+    { icon: "▦", label: "New Orders", value: String(today.length) },
+    { icon: "✓", label: "Paid Orders", value: String(paidOrders) },
+    { icon: "↗", label: "Today's Sales", value: formatMoney(totalSales) },
+    { icon: "₵", label: "Cash", value: formatMoney(cashCollected) },
+    { icon: "↔", label: "M-Pesa", value: formatMoney(mpesaCollected) },
   ];
 
   return <AppShell><main className="mx-auto max-w-7xl px-3 pb-28 pt-3 sm:px-6 sm:pt-6 lg:px-10 lg:pb-10">
@@ -37,16 +89,20 @@ function Dashboard() {
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Today</p>
-          <h1 className="mt-2 text-[2rem] font-black tracking-[-0.05em] text-foreground sm:text-[2.4rem]">{greeting}, {displayName.split(" ")[0]}</h1>
+          <h1 className="mt-2 text-[1.75rem] font-black tracking-[-0.03em] text-foreground sm:text-[2rem]">{greeting}, {displayName.split(" ")[0]}</h1>
           <p className="mt-2 text-sm text-muted-foreground">Here’s what’s happening today</p>
         </div>
-        <Link to="/new-order" className="inline-flex h-11 items-center justify-center rounded-2xl bg-primary px-4 text-sm font-bold text-primary-foreground shadow-sm shadow-primary/20">+ New Order</Link>
+        <div className="flex flex-wrap justify-end gap-2">
+          <Link to="/payments" className="inline-flex h-11 items-center justify-center rounded-2xl border border-border bg-background px-4 text-sm font-bold text-foreground transition hover:bg-muted">Pending{pendingPayments.length > 0 ? ` (${pendingPayments.length})` : ""}</Link>
+        </div>
       </div>
     </section>
 
-    <section className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      {summaryCards.map((card) => <Metric key={card.label} icon={card.icon} label={card.label} value={card.value} hint={card.hint ? "" : undefined} />)}
+    <section className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {summaryCards.map((card) => <Metric key={card.label} icon={card.icon} label={card.label} value={card.value} />)}
     </section>
+
+    <RefundForm />
 
     <section className="mt-5 rounded-[26px] border border-border bg-card p-3 shadow-[0_10px_24px_rgba(15,93,76,0.04)] sm:p-4">
       <div className="mb-3 flex items-center justify-between gap-3 px-1">
@@ -84,8 +140,10 @@ function Dashboard() {
               </div>
             </Link>;
           })}
+          
         </div>
       )}
+      
     </section>
 
     <Link to="/new-order" className="fixed bottom-5 right-5 z-30 inline-flex h-14 w-14 items-center justify-center rounded-full bg-primary text-3xl font-light text-primary-foreground shadow-[0_16px_30px_rgba(15,93,76,0.28)] transition hover:scale-[1.02] sm:h-16 sm:w-16">+</Link>

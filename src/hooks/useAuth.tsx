@@ -18,6 +18,7 @@ export type Hotel = {
   logo_url: string | null;
   primary_color: string;
   secondary_color: string;
+  text_color: string;
   phone: string | null;
   email: string | null;
   address: string | null;
@@ -131,7 +132,7 @@ function useAuthState() {
         const [{ data: hotelData, error: hotelError }, { data: trialData, error: trialError }] = await Promise.all([
           (supabase as any)
             .from("hotels")
-            .select("id, name, slug, tagline, logo_url, primary_color, secondary_color, phone, email, address, currency")
+            .select("id, name, slug, tagline, logo_url, primary_color, secondary_color, text_color, phone, email, address, currency")
             .eq("id", membership.hotel_id)
             .maybeSingle(),
           (supabase as any)

@@ -284,8 +284,8 @@ function NewOrder() {
                 onChange={(e) => setPaymentMethod(e.target.value)}
                 className="mt-1.5 h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30"
               >
-                <option value="Cash">Cash</option>
                 <option value="M-Pesa">M-Pesa</option>
+                <option value="Cash">Cash</option>
               </select>
             </label>
             <label className="mt-3 block text-sm font-semibold">

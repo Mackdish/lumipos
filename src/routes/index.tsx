@@ -30,6 +30,7 @@ function Dashboard() {
   const mpesaCollected = paidToday
     .filter((o) => o.payment_method.toLowerCase().replace(/[-\s]/g, "") === "mpesa")
     .reduce((sum, o) => sum + Number(o.total), 0);
+<<<<<<< HEAD
   const paidOrders = paidToday.length;
   const pendingPayments = orders.filter((o) => o.payment_status === "PENDING");
   const activeShift = useQuery({
@@ -82,6 +83,18 @@ function Dashboard() {
     { icon: "↗", label: "Today's Sales", value: formatMoney(totalSales) },
     { icon: "₵", label: "Cash", value: formatMoney(cashCollected) },
     { icon: "↔", label: "M-Pesa", value: formatMoney(mpesaCollected) },
+=======
+  const allSales = orders.reduce((sum, o) => sum + Number(o.total), 0);
+  const paidOrders = paidToday.length;
+  const greeting = new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 18 ? "Good afternoon" : "Good evening";
+  const summaryCards = [
+    { label: "New Orders", value: String(today.length), icon: "◫", hint: true },
+    { label: "Paid Orders", value: String(paidOrders), icon: "✓", hint: true },
+    { label: "Today's Sales", value: formatMoney(totalSales), icon: "₵", hint: true },
+    { label: "Cash Collected", value: formatMoney(cashCollected), icon: "₵", hint: true },
+    { label: "M-Pesa Collected", value: formatMoney(mpesaCollected), icon: "₿", hint: true },
+    { label: "Total Sales", value: formatMoney(allSales), icon: "₵", hint: true },
+>>>>>>> 7d2c28cc9e4ee09b036ae4ed67eff5c6d2c923ea
   ];
 
   return <AppShell><main className="mx-auto max-w-7xl px-3 pb-28 pt-3 sm:px-6 sm:pt-6 lg:px-10 lg:pb-10">
@@ -99,7 +112,11 @@ function Dashboard() {
     </section>
 
     <section className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+<<<<<<< HEAD
       {summaryCards.map((card) => <Metric key={card.label} icon={card.icon} label={card.label} value={card.value} />)}
+=======
+      {summaryCards.map((card) => <Metric key={card.label} icon={card.icon} label={card.label} value={card.value} hint={card.hint ? "" : undefined} />)}
+>>>>>>> 7d2c28cc9e4ee09b036ae4ed67eff5c6d2c923ea
     </section>
 
     <RefundForm />

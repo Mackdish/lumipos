@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
 import { useAuth } from "@/hooks/useAuth";
@@ -22,27 +22,47 @@ function Settings() {
   const [textColor, setTextColor] = useState(hotel?.text_color || "#26383d");
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    if (!hotel) return;
+    setPrimaryColor(hotel.primary_color || "#1f7a4d");
+    setSecondaryColor(hotel.secondary_color || "#f4f7f5");
+    setTextColor(hotel.text_color || "#26383d");
+  }, [hotel]);
+
   async function saveTheme() {
     if (!hotel || saving) return;
     setSaving(true);
-    const { error } = await (supabase as any).rpc("update_hotel_branding", {
-      hotel_name: hotel.name,
-      hotel_tagline: hotel.tagline,
-      hotel_logo_url: hotel.logo_url,
-      hotel_primary_color: primaryColor,
-      hotel_secondary_color: secondaryColor,
-      hotel_text_color: textColor,
-      hotel_phone: hotel.phone,
-      hotel_email: hotel.email,
-      hotel_address: hotel.address,
-    });
-    setSaving(false);
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      const { error } = await (supabase as any).rpc("update_hotel_branding", {
+        hotel_name: hotel.name,
+        hotel_tagline: hotel.tagline,
+        hotel_logo_url: hotel.logo_url,
+        hotel_primary_color: primaryColor,
+        hotel_secondary_color: secondaryColor,
+        hotel_text_color: textColor,
+        hotel_phone: hotel.phone,
+        hotel_email: hotel.email,
+        hotel_address: hotel.address,
+      });
+      if (error) throw error;
+
+      const { data: saved, error: verifyError } = await (supabase as any)
+        .from("hotels")
+        .select("primary_color, secondary_color, text_color")
+        .eq("id", hotel.id)
+        .maybeSingle();
+      if (verifyError) throw verifyError;
+      if (!saved || saved.primary_color !== primaryColor || saved.secondary_color !== secondaryColor || saved.text_color !== textColor) {
+        throw new Error("The theme could not be verified after saving. Please try again.");
+      }
+
+      toast.success("Restaurant theme updated.");
+      window.location.reload();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to save the restaurant theme.");
+    } finally {
+      setSaving(false);
     }
-    toast.success("Restaurant theme updated.");
-    window.location.reload();
   }
 
   if (!loading && !isManager) {

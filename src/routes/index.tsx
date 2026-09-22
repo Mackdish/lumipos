@@ -78,12 +78,11 @@ function Dashboard() {
   const expectedDrawer = Number(activeShift.data?.opening_cash || 0) + Number(shiftCash.data || 0) - Number(cashOut.data || 0);
   const greeting = new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 18 ? "Good afternoon" : "Good evening";
   const summaryCards = [
-    { label: "New Orders", value: String(today.length), icon: "◫", hint: true },
-    { label: "Paid Orders", value: String(paidOrders), icon: "✓", hint: true },
-    { label: "Today's Sales", value: formatMoney(totalSales), icon: "₵", hint: true },
-    { label: "Cash Collected", value: formatMoney(cashCollected), icon: "₵", hint: true },
-    { label: "M-Pesa Collected", value: formatMoney(mpesaCollected), icon: "₿", hint: true },
-    { label: "Total Sales", value: formatMoney(allSales), icon: "₵", hint: true },
+    { label: "New Orders", value: String(today.length)},
+    { label: "Paid Orders", value: String(paidOrders)},
+    { label: "Today's Sales", value: formatMoney(totalSales)},
+    { label: "Cash Collected", value: formatMoney(cashCollected)},
+    { label: "M-Pesa Collected", value: formatMoney(mpesaCollected)},
   ];
 
   return <AppShell><main className="mx-auto max-w-7xl px-3 pb-28 pt-3 sm:px-6 sm:pt-6 lg:px-10 lg:pb-10">

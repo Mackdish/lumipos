@@ -185,7 +185,7 @@ function NewOrder() {
             {isLoading && (
               <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {[1, 2, 3, 4, 5, 6].map((n) => (
-                  <div key={n} className="h-52 animate-pulse rounded-2xl bg-muted" />
+                  <div key={n} className="h-40 animate-pulse rounded-2xl bg-muted" />
                 ))}
               </div>
             )}
@@ -211,7 +211,7 @@ function NewOrder() {
                       aria-label={`Add ${m.name} to order`}
                       className={`group overflow-hidden rounded-2xl border bg-card text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/30 ${quantity ? "border-primary/60 ring-1 ring-primary/20" : "border-border"}`}
                     >
-                      <div className="relative aspect-[4/3] bg-muted">
+                      <div className="relative aspect-[16/9] bg-muted">
                         {m.image_url ? (
                           <img
                             src={m.image_url}
@@ -241,14 +241,11 @@ function NewOrder() {
                             {formatMoney(Number(m.price))}
                           </p>
                         </div>
-                        <div className="mt-2 flex items-center justify-between">
-                          <span className="text-xs text-muted-foreground">Tap to add</span>
-                          {quantity > 0 && (
-                            <span className="text-xs font-bold text-primary">
-                              {quantity} selected
-                            </span>
-                          )}
-                        </div>
+                        {quantity > 0 && (
+                          <p className="mt-2 text-xs font-bold text-primary">
+                            {quantity} selected
+                          </p>
+                        )}
                       </div>
                     </button>
                   );

@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import LoadingSpinner from "@/components/ui/loading-spinner";
 import { formatMoney, formatTime, orderCode, type Order } from "@/lib/pos";
 
 export const Route = createFileRoute("/orders/$id/receipt")({
@@ -33,7 +34,7 @@ function ReceiptPage() {
   }
 
   if (isLoading) {
-    return <div className="flex min-h-screen items-center justify-center p-6 text-sm text-muted-foreground">Loading receipt…</div>;
+    return <main className="grid min-h-screen place-items-center bg-background"><LoadingSpinner label="Preparing receipt" /></main>;
   }
 
   if (isError || !order) {

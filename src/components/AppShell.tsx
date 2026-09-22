@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import LoadingSpinner from "@/components/ui/loading-spinner";
 
 const nav = [
   { to: "/", label: "Home"}, { to: "/new-order", label: "New order"},
@@ -45,7 +46,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
     setProfileOpen(false);
   }, [pathname]);
 
-  if (loading || !user) return <div className="grid min-h-screen place-items-center bg-background px-4 text-center text-sm text-muted-foreground">Loading your account...</div>;
+  if (loading || !user) return <main className="grid min-h-screen place-items-center bg-background"><LoadingSpinner label="Preparing TillBook" /></main>;
   if (needsHotelSetup && pathname !== "/onboarding") return null;
 
   if (!role && !needsHotelSetup) {

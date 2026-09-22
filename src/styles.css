@@ -21,6 +21,29 @@ button, input, select, textarea {
   font: inherit;
 }
 
+@keyframes loading-orbit {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes loading-orbit-reverse {
+  to { transform: rotate(-360deg); }
+}
+
+.loading-orbit {
+  animation: loading-orbit 900ms linear infinite;
+}
+
+.loading-orbit-reverse {
+  animation: loading-orbit-reverse 700ms linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-orbit,
+  .loading-orbit-reverse {
+    animation-duration: 1800ms;
+  }
+}
+
 @custom-variant dark (&:is(.dark *));
 
 /*
